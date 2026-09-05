@@ -131,7 +131,7 @@ model Member {
 
   // Many-to-many:
   // a member can belong to multiple teams
-  teams Team[]
+  teams TeamMember[]
 
   createdProjects  Project[]  @relation("ProjectCreator")
   createdWorkItems WorkItem[] @relation("WorkItemCreator")
@@ -151,6 +151,18 @@ model Member {
 // TEAM
 // ======================================================
 
+model TeamMember {
+  memberId String
+  teamId   String
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([memberId, teamId])
+  @@index([teamId])
+}
+
 model Team {
   id          String @id @default(uuid())
   workspaceId String
@@ -160,8 +172,8 @@ model Team {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  // Implicit many-to-many relation
-  members Member[]
+  // Many-to-many relation through TeamMember
+  members TeamMember[]
 
   projects Project[]
 
@@ -170,7 +182,6 @@ model Team {
 
   @@index([workspaceId])
 }
-
 
 // ======================================================
 // PROJECT
