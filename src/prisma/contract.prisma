@@ -85,7 +85,7 @@ model Organization {
   members    Member[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt temporal.updatedAt()
 }
 
 
@@ -106,7 +106,7 @@ model Workspace {
   projects Project[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt temporal.updatedAt()
 
   @@index([organizationId])
 }
@@ -140,7 +140,7 @@ model Member {
   assignedTasks Task[] @relation("TaskAssignee")
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt temporal.updatedAt()
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -151,6 +151,26 @@ model Member {
 // TEAM
 // ======================================================
 
+model TeamMember {
+  memberId String
+  teamId   String
+
+  member Member @relation(
+    fields: [memberId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  team Team @relation(
+    fields: [teamId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  @@id([memberId, teamId])
+  @@index([teamId])
+}
+
 model Team {
   id          String @id @default(uuid())
   workspaceId String
@@ -160,17 +180,16 @@ model Team {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  // Implicit many-to-many relation
+// Many-to-many relation through TeamMember
   members Member[]
 
   projects Project[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt temporal.updatedAt()
 
   @@index([workspaceId])
 }
-
 
 // ======================================================
 // PROJECT
@@ -198,7 +217,7 @@ model Project {
   sprints  Sprint[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt temporal.updatedAt()
 
   @@index([workspaceId])
   @@index([teamId])
@@ -222,7 +241,7 @@ model Backlog {
   workItems WorkItem[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt temporal.updatedAt()
 
   @@unique([projectId, name])
   @@index([projectId])
@@ -252,7 +271,7 @@ model WorkItem {
   tasks Task[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt temporal.updatedAt()
 
   @@index([backlogId])
   @@index([createdById])
@@ -280,7 +299,7 @@ model Sprint {
   tasks Task[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt temporal.updatedAt()
 
   @@index([projectId])
 }
@@ -323,7 +342,7 @@ model Task {
   createdBy Member @relation("TaskCreator", fields: [createdById], references: [id])
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt temporal.updatedAt()
 
   @@index([workItemId])
   @@index([sprintId])
