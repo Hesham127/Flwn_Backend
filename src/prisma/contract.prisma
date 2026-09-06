@@ -83,7 +83,8 @@ model Organization {
 
   workspaces Workspace[]
   members    Member[]
-
+  
+  archivedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -104,7 +105,8 @@ model Workspace {
 
   teams    Team[]
   projects Project[]
-
+  
+  archivedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
