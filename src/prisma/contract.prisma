@@ -87,6 +87,8 @@ model Organization {
   archivedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt temporal.updatedAt()
+
+  @@index([archivedAt])
 }
 
 
@@ -109,8 +111,9 @@ model Workspace {
   archivedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt temporal.updatedAt()
-
-  @@index([organizationId])
+  
+  @@unique([organizationId, name])
+  @@index([organizationId, archivedAt])
 }
 
 
