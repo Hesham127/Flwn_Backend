@@ -83,9 +83,12 @@ model Organization {
 
   workspaces Workspace[]
   members    Member[]
-
+  
+  archivedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt temporal.updatedAt()
+
+  @@index([archivedAt])
 }
 
 
@@ -104,11 +107,13 @@ model Workspace {
 
   teams    Team[]
   projects Project[]
-
+  
+  archivedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt temporal.updatedAt()
-
-  @@index([organizationId])
+  
+  @@unique([organizationId, name])
+  @@index([organizationId, archivedAt])
 }
 
 
