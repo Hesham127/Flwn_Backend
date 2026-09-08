@@ -21,11 +21,17 @@ export interface ProjectScopedRecord {
 
 export interface TaskAssignmentInput extends ProjectScopedRecord {
   workItemProjectId: string;
+  creatorProjectId: string;
+  creatorIsActive: boolean;
   sprintProjectId?: string | null;
   assigneeProjectId?: string | null;
   assigneeIsActive?: boolean;
   status: TaskStatus;
   completedAt?: Date | null;
+}
+
+export interface ProjectMemberRecord extends ProjectScopedRecord {
+  status: 'ACTIVE' | 'INACTIVE';
 }
 
 const allowedTransitions: Readonly<Record<SprintStatus, readonly SprintStatus[]>> = {
@@ -37,6 +43,18 @@ const allowedTransitions: Readonly<Record<SprintStatus, readonly SprintStatus[]>
 
 @Injectable()
 export class WorkRulesService {
+  assertMemberCanWorkOnProject(
+    projectId: string,
+    member: ProjectMemberRecord,
+    memberName: string,
+  ): void {
+    this.assertSameProject(projectId, member, memberName);
+
+    if (member.status !== 'ACTIVE') {
+      throw new BadRequestException(`${memberName} must be active`);
+    }
+  }
+
   assertSameProject(
     expectedProjectId: string,
     record: ProjectScopedRecord,
@@ -74,6 +92,13 @@ export class WorkRulesService {
     this.assertSameProject(input.projectId, {
       projectId: input.workItemProjectId,
     }, 'WorkItem');
+    this.assertSameProject(input.projectId, {
+      projectId: input.creatorProjectId,
+    }, 'Creator');
+
+    if (!input.creatorIsActive) {
+      throw new BadRequestException('Creator must be active');
+    }
 
     if (input.sprintProjectId) {
       this.assertSameProject(input.projectId, {

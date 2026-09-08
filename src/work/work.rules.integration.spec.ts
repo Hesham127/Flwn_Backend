@@ -50,6 +50,8 @@ describe('Work planning project rules (integration)', () => {
       rules.assertTaskAssignment({
         projectId: 'project-1',
         workItemProjectId: 'project-1',
+        creatorProjectId: 'project-1',
+        creatorIsActive: true,
         sprintProjectId: 'project-1',
         assigneeProjectId: 'project-1',
         assigneeIsActive: true,
@@ -61,6 +63,8 @@ describe('Work planning project rules (integration)', () => {
       rules.assertTaskAssignment({
         projectId: 'project-1',
         workItemProjectId: 'project-2',
+        creatorProjectId: 'project-1',
+        creatorIsActive: true,
         status: TaskStatus.TODO,
       }),
     ).toThrow(BadRequestException);
@@ -71,6 +75,8 @@ describe('Work planning project rules (integration)', () => {
       rules.assertTaskAssignment({
         projectId: 'project-1',
         workItemProjectId: 'project-1',
+        creatorProjectId: 'project-1',
+        creatorIsActive: true,
         assigneeProjectId: 'project-1',
         assigneeIsActive: false,
         status: TaskStatus.TODO,
@@ -88,6 +94,24 @@ describe('Work planning project rules (integration)', () => {
     expect(() =>
       rules.assertCompletedAt(TaskStatus.DONE, new Date()),
     ).not.toThrow();
+  });
+
+  it('requires creators and assignees to be active project members', () => {
+    expect(() =>
+      rules.assertMemberCanWorkOnProject(
+        'project-1',
+        { projectId: 'project-1', status: 'ACTIVE' },
+        'Creator',
+      ),
+    ).not.toThrow();
+
+    expect(() =>
+      rules.assertMemberCanWorkOnProject(
+        'project-1',
+        { projectId: 'project-2', status: 'ACTIVE' },
+        'Creator',
+      ),
+    ).toThrow(BadRequestException);
   });
 
   it('keeps terminal Sprint states terminal', () => {
