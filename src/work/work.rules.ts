@@ -7,6 +7,10 @@ export enum SprintStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export interface ProjectScopedRecord {
+  projectId: string;
+}
+
 const allowedTransitions: Readonly<Record<SprintStatus, readonly SprintStatus[]>> = {
   [SprintStatus.PLANNED]: [SprintStatus.ACTIVE, SprintStatus.CANCELLED],
   [SprintStatus.ACTIVE]: [SprintStatus.COMPLETED, SprintStatus.CANCELLED],
@@ -16,6 +20,39 @@ const allowedTransitions: Readonly<Record<SprintStatus, readonly SprintStatus[]>
 
 @Injectable()
 export class WorkRulesService {
+  assertSameProject(
+    expectedProjectId: string,
+    record: ProjectScopedRecord,
+    resourceName: string,
+  ): void {
+    if (record.projectId !== expectedProjectId) {
+      throw new BadRequestException(
+        `${resourceName} does not belong to project ${expectedProjectId}`,
+      );
+    }
+  }
+
+  assertBacklogCanCreateWorkItem(
+    projectId: string,
+    backlog: ProjectScopedRecord,
+  ): void {
+    this.assertSameProject(projectId, backlog, 'Backlog');
+  }
+
+  assertSprintBelongsToProject(
+    projectId: string,
+    sprint: ProjectScopedRecord,
+  ): void {
+    this.assertSameProject(projectId, sprint, 'Sprint');
+  }
+
+  assertTaskCanJoinSprint(
+    workItemProjectId: string,
+    sprint: ProjectScopedRecord,
+  ): void {
+    this.assertSprintBelongsToProject(workItemProjectId, sprint);
+  }
+
   assertSprintTransition(current: SprintStatus, next: SprintStatus): void {
     if (current === next) {
       throw new BadRequestException(`Sprint is already ${current}`);
