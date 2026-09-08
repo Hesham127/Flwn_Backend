@@ -145,6 +145,7 @@ model Member {
 
   createdProjects  Project[]  @relation("ProjectCreator")
   createdWorkItems WorkItem[] @relation("WorkItemCreator")
+  createdSprints   Sprint[]    @relation("SprintCreator")
   createdTasks     Task[]     @relation("TaskCreator")
 
   assignedTasks Task[] @relation("TaskAssignee")
@@ -221,6 +222,7 @@ model Project {
   )
 
   backlogs Backlog[]
+  workItems WorkItem[]
   sprints  Sprint[]
 
   createdAt DateTime @default(now())
@@ -265,6 +267,7 @@ model Backlog {
 
 model WorkItem {
   id          String @id @default(uuid())
+  projectId   String
   backlogId   String
   createdById String
 
@@ -274,6 +277,12 @@ model WorkItem {
   type     WorkItemType
   priority Priority       @default(MEDIUM)
   status   WorkItemStatus @default(OPEN)
+
+  project Project @relation(
+    fields: [projectId],
+    references: [id],
+    onDelete: Cascade
+  )
 
   backlog Backlog @relation(
     fields: [backlogId],
@@ -292,6 +301,8 @@ model WorkItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([projectId, status])
+  @@index([projectId, priority])
   @@index([backlogId])
   @@index([createdById])
 }
@@ -304,6 +315,7 @@ model WorkItem {
 model Sprint {
   id        String @id @default(uuid())
   projectId String
+  createdById String
 
   name String
   goal String?
@@ -319,12 +331,21 @@ model Sprint {
     onDelete: Cascade
   )
 
+  createdBy Member @relation(
+    "SprintCreator",
+    fields: [createdById],
+    references: [id]
+  )
+
   tasks Task[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([projectId])
+  @@unique([projectId, name])
+  @@index([projectId, status])
+  @@index([projectId, startDate])
+  @@index([createdById])
 }
 
 
