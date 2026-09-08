@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import {
   SprintStatus,
+  TaskStatus,
   WorkRulesService,
 } from './work.rules';
 
@@ -42,6 +43,51 @@ describe('Work planning project rules (integration)', () => {
     expect(() =>
       rules.assertTaskCanJoinSprint('project-1', { projectId: 'project-2' }),
     ).toThrow(BadRequestException);
+  });
+
+  it('requires Task, WorkItem, Sprint, and assignee to share the Project', () => {
+    expect(() =>
+      rules.assertTaskAssignment({
+        projectId: 'project-1',
+        workItemProjectId: 'project-1',
+        sprintProjectId: 'project-1',
+        assigneeProjectId: 'project-1',
+        assigneeIsActive: true,
+        status: TaskStatus.IN_PROGRESS,
+      }),
+    ).not.toThrow();
+
+    expect(() =>
+      rules.assertTaskAssignment({
+        projectId: 'project-1',
+        workItemProjectId: 'project-2',
+        status: TaskStatus.TODO,
+      }),
+    ).toThrow(BadRequestException);
+  });
+
+  it('requires active assignees and consistent completedAt', () => {
+    expect(() =>
+      rules.assertTaskAssignment({
+        projectId: 'project-1',
+        workItemProjectId: 'project-1',
+        assigneeProjectId: 'project-1',
+        assigneeIsActive: false,
+        status: TaskStatus.TODO,
+      }),
+    ).toThrow(BadRequestException);
+
+    expect(() => rules.assertCompletedAt(TaskStatus.DONE, null)).toThrow(
+      BadRequestException,
+    );
+    expect(() =>
+      rules.assertCompletedAt(TaskStatus.IN_PROGRESS, new Date()),
+    ).toThrow(
+      BadRequestException,
+    );
+    expect(() =>
+      rules.assertCompletedAt(TaskStatus.DONE, new Date()),
+    ).not.toThrow();
   });
 
   it('keeps terminal Sprint states terminal', () => {

@@ -7,8 +7,25 @@ export enum SprintStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export enum TaskStatus {
+  TODO = 'TODO',
+  IN_PROGRESS = 'IN_PROGRESS',
+  REVIEW = 'REVIEW',
+  DONE = 'DONE',
+  BLOCKED = 'BLOCKED',
+}
+
 export interface ProjectScopedRecord {
   projectId: string;
+}
+
+export interface TaskAssignmentInput extends ProjectScopedRecord {
+  workItemProjectId: string;
+  sprintProjectId?: string | null;
+  assigneeProjectId?: string | null;
+  assigneeIsActive?: boolean;
+  status: TaskStatus;
+  completedAt?: Date | null;
 }
 
 const allowedTransitions: Readonly<Record<SprintStatus, readonly SprintStatus[]>> = {
@@ -51,6 +68,38 @@ export class WorkRulesService {
     sprint: ProjectScopedRecord,
   ): void {
     this.assertSprintBelongsToProject(workItemProjectId, sprint);
+  }
+
+  assertTaskAssignment(input: TaskAssignmentInput): void {
+    this.assertSameProject(input.projectId, {
+      projectId: input.workItemProjectId,
+    }, 'WorkItem');
+
+    if (input.sprintProjectId) {
+      this.assertSameProject(input.projectId, {
+        projectId: input.sprintProjectId,
+      }, 'Sprint');
+    }
+
+    if (input.assigneeProjectId) {
+      this.assertSameProject(input.projectId, {
+        projectId: input.assigneeProjectId,
+      }, 'Assignee');
+    }
+
+    if (input.assigneeProjectId && input.assigneeIsActive === false) {
+      throw new BadRequestException('Task assignee must be active');
+    }
+  }
+
+  assertCompletedAt(status: TaskStatus, completedAt: Date | null): void {
+    if (status === TaskStatus.DONE && !completedAt) {
+      throw new BadRequestException('DONE tasks require completedAt');
+    }
+
+    if (status !== TaskStatus.DONE && completedAt) {
+      throw new BadRequestException('Only DONE tasks may have completedAt');
+    }
   }
 
   assertSprintTransition(current: SprintStatus, next: SprintStatus): void {
