@@ -112,4 +112,61 @@ describe('TaskService', () => {
       'project member',
     );
   });
+
+  it('marks a task done with a completion timestamp', async () => {
+    const task = await service.create({
+      projectId: 'project-1',
+      workItemId: 'work-item-1',
+      createdById: 'member-1',
+      title: 'Complete me',
+    });
+
+    const completed = await service.transition(task.id, TaskStatus.DONE);
+
+    expect(completed.status).toBe(TaskStatus.DONE);
+    expect(completed.completedAt).toBeInstanceOf(Date);
+  });
+
+  it('clears completedAt when a done task returns to an open status', async () => {
+    const task = await service.create({
+      projectId: 'project-1',
+      workItemId: 'work-item-1',
+      createdById: 'member-1',
+      title: 'Reopen me',
+    });
+
+    await service.transition(task.id, TaskStatus.DONE);
+    const reopened = await service.transition(task.id, TaskStatus.IN_PROGRESS);
+
+    expect(reopened.status).toBe(TaskStatus.IN_PROGRESS);
+    expect(reopened.completedAt).toBeNull();
+  });
+
+  it('keeps update status changes consistent with completedAt', async () => {
+    const task = await service.create({
+      projectId: 'project-1',
+      workItemId: 'work-item-1',
+      createdById: 'member-1',
+      title: 'Update status',
+    });
+
+    const completed = await service.update(task.id, { status: TaskStatus.DONE });
+    expect(completed.completedAt).toBeInstanceOf(Date);
+
+    const reopened = await service.update(task.id, { status: TaskStatus.TODO });
+    expect(reopened.completedAt).toBeNull();
+  });
+
+  it('rejects an invalid task status', async () => {
+    const task = await service.create({
+      projectId: 'project-1',
+      workItemId: 'work-item-1',
+      createdById: 'member-1',
+      title: 'Invalid status',
+    });
+
+    await expect(
+      service.transition(task.id, 'INVALID' as TaskStatus),
+    ).rejects.toThrow('Invalid task status');
+  });
 });

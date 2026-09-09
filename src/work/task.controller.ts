@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { TaskService } from './task.service.js';
 import type { CreateTaskInput, UpdateTaskInput } from './task.types.js';
+import { TaskStatus } from './work.rules.js';
 
 @Controller('tasks')
 export class TaskController {
@@ -16,6 +17,11 @@ export class TaskController {
 
   @Get(':id')
   get(@Param('id') id: string) { return this.tasks.findById(id); }
+
+  @Patch(':id/status')
+  transition(@Param('id') id: string, @Body() input: { status: TaskStatus }) {
+    return this.tasks.transition(id, input.status);
+  }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() input: UpdateTaskInput) { return this.tasks.update(id, input); }

@@ -127,6 +127,12 @@ export class WorkRulesService {
     }
   }
 
+  assertTaskStatus(status: TaskStatus): void {
+    if (!Object.values(TaskStatus).includes(status)) {
+      throw new BadRequestException(`Invalid task status: ${status}`);
+    }
+  }
+
   assertSprintTransition(current: SprintStatus, next: SprintStatus): void {
     if (current === next) {
       throw new BadRequestException(`Sprint is already ${current}`);

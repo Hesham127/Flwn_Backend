@@ -18,6 +18,8 @@ export class TaskService {
   ) {}
 
   async create(input: CreateTaskInput): Promise<TaskRecord> {
+    const status = input.status ?? TaskStatus.TODO;
+    this.rules.assertTaskStatus(status);
     this.rules.assertTaskAssignment({
       projectId: input.projectId,
       workItemProjectId: input.projectId,
@@ -26,11 +28,11 @@ export class TaskService {
       sprintProjectId: input.sprintId ? input.projectId : null,
       assigneeProjectId: input.assigneeId ? input.projectId : null,
       assigneeIsActive: true,
-      status: input.status ?? TaskStatus.TODO,
+      status,
       completedAt: input.completedAt,
     });
     this.rules.assertCompletedAt(
-      input.status ?? TaskStatus.TODO,
+      status,
       input.completedAt ?? null,
     );
     return this.repository.create(input);
@@ -49,11 +51,44 @@ export class TaskService {
   async update(id: string, input: UpdateTaskInput): Promise<TaskRecord> {
     const current = await this.findById(id);
     const status = input.status ?? current.status;
-    const completedAt = input.completedAt === undefined ? current.completedAt : input.completedAt;
+    this.rules.assertTaskStatus(status);
+    const completedAt = this.resolveCompletedAt(
+      current,
+      status,
+      input.completedAt,
+    );
     this.rules.assertCompletedAt(status, completedAt ?? null);
-    const task = await this.repository.update(id, input);
+    const task = await this.repository.update(id, {
+      ...input,
+      ...(input.status !== undefined || input.completedAt !== undefined
+        ? { status, completedAt }
+        : {}),
+    });
     if (!task) throw new NotFoundException('Task not found');
     return task;
+  }
+
+  async transition(id: string, status: TaskStatus): Promise<TaskRecord> {
+    await this.findById(id);
+    this.rules.assertTaskStatus(status);
+    const completedAt = status === TaskStatus.DONE ? new Date() : null;
+    this.rules.assertCompletedAt(status, completedAt);
+
+    const task = await this.repository.update(id, { status, completedAt });
+    if (!task) throw new NotFoundException('Task not found');
+    return task;
+  }
+
+  private resolveCompletedAt(
+    current: TaskRecord,
+    status: TaskStatus,
+    completedAt: Date | null | undefined,
+  ): Date | null {
+    if (completedAt !== undefined) return completedAt;
+    if (status !== TaskStatus.DONE) return null;
+    return current.status === TaskStatus.DONE && current.completedAt
+      ? current.completedAt
+      : new Date();
   }
 
   async assign(id: string, assigneeId: string): Promise<TaskRecord> {
