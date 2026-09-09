@@ -44,3 +44,10 @@ export interface TaskRepository {
   update(id: string, input: UpdateTaskInput): Promise<TaskRecord | null>;
   delete(id: string): Promise<boolean>;
 }
+
+export interface TaskMembershipLookup {
+  findProjectMember(
+    projectId: string,
+    memberId: string,
+  ): Promise<{ projectId: string; status: 'ACTIVE' | 'INACTIVE' } | null>;
+}

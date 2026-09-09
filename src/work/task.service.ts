@@ -1,7 +1,8 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { TaskStatus, WorkRulesService } from './work.rules.js';
 import type {
   CreateTaskInput,
+  TaskMembershipLookup,
   TaskRecord,
   TaskRepository,
   UpdateTaskInput,
@@ -12,6 +13,8 @@ export class TaskService {
   constructor(
     @Inject('TASK_REPOSITORY') private readonly repository: TaskRepository,
     private readonly rules: WorkRulesService,
+    @Inject('ORGANIZATION_MEMBERSHIP')
+    private readonly membership: TaskMembershipLookup,
   ) {}
 
   async create(input: CreateTaskInput): Promise<TaskRecord> {
@@ -49,6 +52,31 @@ export class TaskService {
     const completedAt = input.completedAt === undefined ? current.completedAt : input.completedAt;
     this.rules.assertCompletedAt(status, completedAt ?? null);
     const task = await this.repository.update(id, input);
+    if (!task) throw new NotFoundException('Task not found');
+    return task;
+  }
+
+  async assign(id: string, assigneeId: string): Promise<TaskRecord> {
+    const current = await this.findById(id);
+    if (!assigneeId) throw new BadRequestException('Assignee is required');
+
+    const member = await this.membership.findProjectMember(
+      current.projectId,
+      assigneeId,
+    );
+    if (!member) {
+      throw new BadRequestException('Assignee must be a project member');
+    }
+
+    this.rules.assertMemberCanWorkOnProject(current.projectId, member, 'Assignee');
+    const task = await this.repository.update(id, { assigneeId });
+    if (!task) throw new NotFoundException('Task not found');
+    return task;
+  }
+
+  async unassign(id: string): Promise<TaskRecord> {
+    await this.findById(id);
+    const task = await this.repository.update(id, { assigneeId: null });
     if (!task) throw new NotFoundException('Task not found');
     return task;
   }

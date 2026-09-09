@@ -20,6 +20,15 @@ export class TaskController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() input: UpdateTaskInput) { return this.tasks.update(id, input); }
 
+  @Post(':id/assign')
+  @Patch(':id/assign')
+  assign(@Param('id') id: string, @Body() input: { assigneeId: string }) {
+    return this.tasks.assign(id, input.assigneeId);
+  }
+
+  @Delete(':id/assign')
+  unassign(@Param('id') id: string) { return this.tasks.unassign(id); }
+
   @Delete(':id')
   remove(@Param('id') id: string) { return this.tasks.delete(id); }
 }
