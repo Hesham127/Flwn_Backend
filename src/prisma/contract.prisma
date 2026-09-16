@@ -86,9 +86,7 @@ model Organization {
   
   archivedAt DateTime?
   createdAt DateTime @default(now())
-  updatedAt temporal.updatedAt()
-
-  @@index([archivedAt])
+  updatedAt DateTime @updatedAt
 }
 
 
@@ -110,10 +108,9 @@ model Workspace {
   
   archivedAt DateTime?
   createdAt DateTime @default(now())
-  updatedAt temporal.updatedAt()
-  
-  @@unique([organizationId, name])
-  @@index([organizationId, archivedAt])
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
 }
 
 
@@ -147,7 +144,7 @@ model Member {
   projectMemberships ProjectMember[]
 
   createdAt DateTime @default(now())
-  updatedAt temporal.updatedAt()
+  updatedAt DateTime @updatedAt
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -157,26 +154,6 @@ model Member {
 // ======================================================
 // TEAM
 // ======================================================
-
-model TeamMember {
-  memberId String
-  teamId   String
-
-  member Member @relation(
-    fields: [memberId],
-    references: [id],
-    onDelete: Cascade
-  )
-
-  team Team @relation(
-    fields: [teamId],
-    references: [id],
-    onDelete: Cascade
-  )
-
-  @@id([memberId, teamId])
-  @@index([teamId])
-}
 
 model Team {
   id          String @id @default(uuid())
@@ -193,7 +170,7 @@ model Team {
   projects Project[]
 
   createdAt DateTime @default(now())
-  updatedAt temporal.updatedAt()
+  updatedAt DateTime @updatedAt
 
   @@index([workspaceId])
 }
@@ -227,7 +204,7 @@ model Project {
   tasks    Task[]
 
   createdAt DateTime @default(now())
-  updatedAt temporal.updatedAt()
+  updatedAt DateTime @updatedAt
 
   @@index([workspaceId])
   @@index([teamId])
@@ -278,7 +255,7 @@ model Backlog {
   workItems WorkItem[]
 
   createdAt DateTime @default(now())
-  updatedAt temporal.updatedAt()
+  updatedAt DateTime @updatedAt
 
   @@unique([projectId, name])
   @@index([projectId])
@@ -319,7 +296,7 @@ model WorkItem {
   tasks Task[]
 
   createdAt DateTime @default(now())
-  updatedAt temporal.updatedAt()
+  updatedAt DateTime @updatedAt
 
   @@unique([id, projectId])
   @@index([projectId, status])
@@ -424,7 +401,7 @@ model Task {
   )
 
   createdAt DateTime @default(now())
-  updatedAt temporal.updatedAt()
+  updatedAt DateTime @updatedAt
 
   @@index([projectId, status])
   @@index([projectId, sprintId])
