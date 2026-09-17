@@ -31,6 +31,8 @@
 $ npm install
 ```
 
+See [Prisma setup](prisma.md) for database configuration and migration instructions.
+
 ## Compile and run the project
 
 ```bash

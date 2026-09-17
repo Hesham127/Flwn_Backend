@@ -1,10 +1,8 @@
-// use prisma-next
-
-// prisma/schema.prisma
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider            = "prisma-client"
+  output              = "../generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
 }
 
 datasource db {
@@ -85,7 +83,8 @@ model Organization {
 
   workspaces Workspace[]
   members    Member[]
-
+  
+  archivedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -102,15 +101,12 @@ model Workspace {
   name        String
   description String?
 
-  organization Organization @relation(
-    fields: [organizationId],
-    references: [id],
-    onDelete: Cascade
-  )
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   teams    Team[]
   projects Project[]
-
+  
+  archivedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -133,11 +129,7 @@ model Member {
   role   MemberRole
   status MemberStatus @default(ACTIVE)
 
-  organization Organization @relation(
-    fields: [organizationId],
-    references: [id],
-    onDelete: Cascade
-  )
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Many-to-many:
   // a member can belong to multiple teams
@@ -170,13 +162,9 @@ model Team {
   name        String
   description String?
 
-  workspace Workspace @relation(
-    fields: [workspaceId],
-    references: [id],
-    onDelete: Cascade
-  )
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  // Implicit many-to-many relation
+  // Many-to-many: a team can have multiple members
   members Member[]
 
   projects Project[]
@@ -186,7 +174,6 @@ model Team {
 
   @@index([workspaceId])
 }
-
 
 // ======================================================
 // PROJECT
@@ -204,23 +191,11 @@ model Project {
 
   status ProjectStatus @default(ACTIVE)
 
-  workspace Workspace @relation(
-    fields: [workspaceId],
-    references: [id],
-    onDelete: Cascade
-  )
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  team Team? @relation(
-    fields: [teamId],
-    references: [id],
-    onDelete: SetNull
-  )
+  team Team? @relation(fields: [teamId], references: [id], onDelete: SetNull)
 
-  createdBy Member @relation(
-    "ProjectCreator",
-    fields: [createdById],
-    references: [id]
-  )
+  createdBy Member @relation("ProjectCreator", fields: [createdById], references: [id])
 
   projectMembers ProjectMember[]
   backlogs Backlog[]
@@ -275,11 +250,7 @@ model Backlog {
   name        String
   description String?
 
-  project Project @relation(
-    fields: [projectId],
-    references: [id],
-    onDelete: Cascade
-  )
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   workItems WorkItem[]
 
@@ -320,11 +291,7 @@ model WorkItem {
     onDelete: Cascade
   )
 
-  createdBy Member @relation(
-    "WorkItemCreator",
-    fields: [createdById],
-    references: [id]
-  )
+  createdBy Member @relation("WorkItemCreator", fields: [createdById], references: [id])
 
   tasks Task[]
 
@@ -356,11 +323,7 @@ model Sprint {
   startDate DateTime?
   endDate   DateTime?
 
-  project Project @relation(
-    fields: [projectId],
-    references: [id],
-    onDelete: Cascade
-  )
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   createdBy Member @relation(
     "SprintCreator",
@@ -428,12 +391,7 @@ model Task {
     onDelete: SetNull
   )
 
-  assignee Member? @relation(
-    "TaskAssignee",
-    fields: [assigneeId],
-    references: [id],
-    onDelete: SetNull
-  )
+  assignee Member? @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
 
   createdBy Member @relation(
     "TaskCreator",
