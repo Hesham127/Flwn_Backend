@@ -21,12 +21,10 @@ const mocks = vi.hoisted(() => {
     update: vi.fn(),
   };
 
-  return {
-    memberQuery,
-  };
+  return { memberQuery };
 });
 
-vi.mock('../prisma/db.js', () => ({
+vi.mock('../../src/prisma/db.js', () => ({
   db: {
     orm: {
       public: {
@@ -36,14 +34,11 @@ vi.mock('../prisma/db.js', () => ({
   },
 }));
 
-import { MembersService } from './members.service.js';
+import { MembersService } from '../../src/members/members.service.js';
 
 describe('MembersService', () => {
-  const organizationId =
-    '550e8400-e29b-41d4-a716-446655440000';
-
-  const memberId =
-    '550e8400-e29b-41d4-a716-446655440001';
+  const organizationId = '550e8400-e29b-41d4-a716-446655440000';
+  const memberId = '550e8400-e29b-41d4-a716-446655440001';
 
   const organizationService = {
     findOne: vi.fn(),
@@ -54,21 +49,14 @@ describe('MembersService', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
-    mocks.memberQuery.where.mockReturnValue(
-      mocks.memberQuery,
-    );
-
-    mocks.memberQuery.orderBy.mockReturnValue(
-      mocks.memberQuery,
-    );
+    mocks.memberQuery.where.mockReturnValue(mocks.memberQuery);
+    mocks.memberQuery.orderBy.mockReturnValue(mocks.memberQuery);
 
     organizationService.findOne.mockResolvedValue({
       id: organizationId,
     });
 
-    service = new MembersService(
-      organizationService as never,
-    );
+    service = new MembersService(organizationService as never);
   });
 
   it('creates a HUMAN member', async () => {
@@ -85,19 +73,14 @@ describe('MembersService', () => {
     mocks.memberQuery.first.mockResolvedValue(null);
     mocks.memberQuery.create.mockResolvedValue(member);
 
-    const result = await service.create(
-      organizationId,
-      {
-        name: 'Anas Ahmed',
-        email: 'ANAS@example.com',
-        type: 'HUMAN',
-        role: 'DEVELOPER',
-      },
-    );
+    const result = await service.create(organizationId, {
+      name: 'Anas Ahmed',
+      email: 'ANAS@example.com',
+      type: 'HUMAN',
+      role: 'DEVELOPER',
+    });
 
-    expect(
-      mocks.memberQuery.create,
-    ).toHaveBeenCalledWith({
+    expect(mocks.memberQuery.create).toHaveBeenCalledWith({
       organizationId,
       name: 'Anas Ahmed',
       email: 'anas@example.com',
@@ -122,19 +105,14 @@ describe('MembersService', () => {
     mocks.memberQuery.first.mockResolvedValue(null);
     mocks.memberQuery.create.mockResolvedValue(member);
 
-    const result = await service.create(
-      organizationId,
-      {
-        name: 'AI Agent',
-        email: 'ai@example.com',
-        type: 'AI',
-        role: 'AI_DEVELOPER',
-      },
-    );
+    const result = await service.create(organizationId, {
+      name: 'AI Agent',
+      email: 'ai@example.com',
+      type: 'AI',
+      role: 'AI_DEVELOPER',
+    });
 
-    expect(
-      mocks.memberQuery.create,
-    ).toHaveBeenCalledWith({
+    expect(mocks.memberQuery.create).toHaveBeenCalledWith({
       organizationId,
       name: 'AI Agent',
       email: 'ai@example.com',
@@ -162,9 +140,7 @@ describe('MembersService', () => {
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
 
-    expect(
-      mocks.memberQuery.create,
-    ).not.toHaveBeenCalled();
+    expect(mocks.memberQuery.create).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate email in the same organization', async () => {
@@ -183,19 +159,14 @@ describe('MembersService', () => {
       }),
     ).rejects.toBeInstanceOf(ConflictException);
 
-    expect(
-      mocks.memberQuery.create,
-    ).not.toHaveBeenCalled();
+    expect(mocks.memberQuery.create).not.toHaveBeenCalled();
   });
 
   it('throws MEMBER_NOT_FOUND when member does not exist', async () => {
     mocks.memberQuery.first.mockResolvedValue(null);
 
     await expect(
-      service.findOne(
-        organizationId,
-        memberId,
-      ),
+      service.findOne(organizationId, memberId),
     ).rejects.toMatchObject({
       response: {
         code: 'MEMBER_NOT_FOUND',
@@ -219,32 +190,20 @@ describe('MembersService', () => {
 
     mocks.memberQuery.all.mockResolvedValue(members);
 
-    const result = await service.findAll(
-      organizationId,
-      {
-        type: 'HUMAN',
-        status: 'ACTIVE',
-      },
-    );
-
-    expect(
-      mocks.memberQuery.where,
-    ).toHaveBeenCalledWith({
-      organizationId,
-    });
-
-    expect(
-      mocks.memberQuery.where,
-    ).toHaveBeenCalledWith({
+    const result = await service.findAll(organizationId, {
       type: 'HUMAN',
-    });
-
-    expect(
-      mocks.memberQuery.where,
-    ).toHaveBeenCalledWith({
       status: 'ACTIVE',
     });
 
+    expect(mocks.memberQuery.where).toHaveBeenCalledWith({
+      organizationId,
+    });
+    expect(mocks.memberQuery.where).toHaveBeenCalledWith({
+      type: 'HUMAN',
+    });
+    expect(mocks.memberQuery.where).toHaveBeenCalledWith({
+      status: 'ACTIVE',
+    });
     expect(result).toEqual(members);
   });
 
@@ -269,18 +228,12 @@ describe('MembersService', () => {
       status: 'ACTIVE',
     });
 
-    const result = await service.update(
-      organizationId,
-      memberId,
-      {
-        name: 'Anas Updated',
-        role: 'TEAM_LEAD',
-      },
-    );
+    const result = await service.update(organizationId, memberId, {
+      name: 'Anas Updated',
+      role: 'TEAM_LEAD',
+    });
 
-    expect(
-      mocks.memberQuery.update,
-    ).toHaveBeenCalledWith({
+    expect(mocks.memberQuery.update).toHaveBeenCalledWith({
       name: 'Anas Updated',
       role: 'TEAM_LEAD',
     });
@@ -304,14 +257,9 @@ describe('MembersService', () => {
 
     mocks.memberQuery.update.mockResolvedValue({});
 
-    const result = await service.remove(
-      organizationId,
-      memberId,
-    );
+    const result = await service.remove(organizationId, memberId);
 
-    expect(
-      mocks.memberQuery.update,
-    ).toHaveBeenCalledWith({
+    expect(mocks.memberQuery.update).toHaveBeenCalledWith({
       status: 'INACTIVE',
     });
 

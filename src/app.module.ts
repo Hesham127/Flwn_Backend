@@ -7,7 +7,6 @@ import { IntegrationsModule } from './integrations/integrations.module.js';
 import { MeetingsModule } from './meetings/meetings.module.js';
 import { MembersModule } from './members/members.module.js';
 import { TeamsModule } from './teams/teams.module.js';
-import { TeamMembersModule } from './team-members/team-members.module.js'; // <-- add
 
 @Module({
   imports: [
@@ -17,7 +16,6 @@ import { TeamMembersModule } from './team-members/team-members.module.js'; // <-
     MeetingsModule,
     MembersModule,
     TeamsModule,
-    TeamMembersModule, // <-- add
   ],
   controllers: [AppController],
   providers: [AppService],
