@@ -1,16 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../prisma/db.js', () => ({ db: {} }));
+vi.mock('../../src/prisma/db.js', () => ({ db: {} }));
 
 import { INestApplication, NotFoundException, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { TeamMembersController } from './team-members.controller.js';
-import { TeamMembersService } from './team-members.service.js';
+import { TeamMembersController } from '../../src/teams/team-members.controller.js';
+import { TeamMembersService } from '../../src/teams/team-members.service.js';
 
 describe('TeamMembersController', () => {
   let app: INestApplication;
-  const orgId = '550e8400-e29b-41d4-a716-446655440000';   // valid UUID
+  const orgId = '550e8400-e29b-41d4-a716-446655440000';
   const wsId = '550e8400-e29b-41d4-a716-446655440001';
   const teamId = '550e8400-e29b-41d4-a716-446655440002';
   const memberId = '550e8400-e29b-41d4-a716-446655440003';
@@ -85,11 +85,8 @@ describe('TeamMembersController', () => {
       .expect(404);
   });
 
-  // ---- Extra: List teams for a member ----
-  // If you want to keep this endpoint, the route must include workspace and team IDs
   it('GET /member/:memberId/teams lists member teams', async () => {
     service.findMemberTeams.mockResolvedValue([]);
-    // Full path: /organizations/:orgId/workspaces/:wsId/teams/:teamId/members/member/:memberId/teams
     await request(app.getHttpServer())
       .get(`/organizations/${orgId}/workspaces/${wsId}/teams/${teamId}/members/member/${memberId}/teams`)
       .expect(200);

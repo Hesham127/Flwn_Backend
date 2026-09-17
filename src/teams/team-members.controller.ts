@@ -66,8 +66,6 @@ export class TeamMembersController {
     return this.teamMembersService.remove(organizationId, workspaceId, teamId, memberId);
   }
 
-  // EXTRA (optional): List all teams for a member
-  // This is not in the original spec but useful for completeness
   @Get('/member/:memberId/teams')
   @ApiOperation({ summary: 'List all teams a member belongs to' })
   @ApiOkResponse({ description: 'Member teams retrieved' })

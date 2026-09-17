@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => {
   return { teamQuery };
 });
 
-vi.mock('../prisma/db.js', () => ({
+vi.mock('../../src/prisma/db.js', () => ({
   db: {
     orm: {
       public: {
@@ -24,8 +24,8 @@ vi.mock('../prisma/db.js', () => ({
   },
 }));
 
-import { TeamsService } from './teams.service.js';
-import { OrganizationWorkspaceLookupService } from '../organization/organization-workspace-lookup.service.js';
+import { TeamsService } from '../../src/teams/teams.service.js';
+import { OrganizationWorkspaceLookupService } from '../../src/organization/organization-workspace-lookup.service.js';
 
 describe('TeamsService', () => {
   const orgId = 'org-uuid';

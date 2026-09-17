@@ -7,7 +7,7 @@ import {
   vi,
 } from 'vitest';
 
-vi.mock('../prisma/db.js', () => ({
+vi.mock('../../src/prisma/db.js', () => ({
   db: {},
 }));
 
@@ -20,20 +20,15 @@ import {
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
-import { TeamsController } from './teams.controller.js';
-import { TeamsService } from './teams.service.js';
+import { TeamsController } from '../../src/teams/teams.controller.js';
+import { TeamsService } from '../../src/teams/teams.service.js';
 
 describe('TeamsController', () => {
   let app: INestApplication;
 
-  const orgId =
-    '550e8400-e29b-41d4-a716-446655440000';
-
-  const wsId =
-    '550e8400-e29b-41d4-a716-446655440001';
-
-  const teamId =
-    '550e8400-e29b-41d4-a716-446655440002';
+  const orgId = '550e8400-e29b-41d4-a716-446655440000';
+  const wsId = '550e8400-e29b-41d4-a716-446655440001';
+  const teamId = '550e8400-e29b-41d4-a716-446655440002';
 
   const team = {
     id: teamId,
@@ -84,30 +79,22 @@ describe('TeamsController', () => {
     service.create.mockResolvedValue(team);
 
     await request(app.getHttpServer())
-      .post(
-        `/organizations/${orgId}/workspaces/${wsId}/teams`,
-      )
+      .post(`/organizations/${orgId}/workspaces/${wsId}/teams`)
       .send({
         name: 'Backend Team',
         description: 'API',
       })
       .expect(201);
 
-    expect(service.create).toHaveBeenCalledWith(
-      orgId,
-      wsId,
-      {
-        name: 'Backend Team',
-        description: 'API',
-      },
-    );
+    expect(service.create).toHaveBeenCalledWith(orgId, wsId, {
+      name: 'Backend Team',
+      description: 'API',
+    });
   });
 
   it('rejects invalid create data', async () => {
     await request(app.getHttpServer())
-      .post(
-        `/organizations/${orgId}/workspaces/${wsId}/teams`,
-      )
+      .post(`/organizations/${orgId}/workspaces/${wsId}/teams`)
       .send({})
       .expect(400);
 
@@ -118,32 +105,20 @@ describe('TeamsController', () => {
     service.findAll.mockResolvedValue([team]);
 
     await request(app.getHttpServer())
-      .get(
-        `/organizations/${orgId}/workspaces/${wsId}/teams`,
-      )
+      .get(`/organizations/${orgId}/workspaces/${wsId}/teams`)
       .expect(200);
 
-    expect(service.findAll).toHaveBeenCalledWith(
-      orgId,
-      wsId,
-      {},
-    );
+    expect(service.findAll).toHaveBeenCalledWith(orgId, wsId, {});
   });
 
   it('GET /:id returns a team', async () => {
     service.findOne.mockResolvedValue(team);
 
     await request(app.getHttpServer())
-      .get(
-        `/organizations/${orgId}/workspaces/${wsId}/teams/${teamId}`,
-      )
+      .get(`/organizations/${orgId}/workspaces/${wsId}/teams/${teamId}`)
       .expect(200);
 
-    expect(service.findOne).toHaveBeenCalledWith(
-      orgId,
-      wsId,
-      teamId,
-    );
+    expect(service.findOne).toHaveBeenCalledWith(orgId, wsId, teamId);
   });
 
   it('PATCH /:id updates a team', async () => {
@@ -153,29 +128,18 @@ describe('TeamsController', () => {
     });
 
     await request(app.getHttpServer())
-      .patch(
-        `/organizations/${orgId}/workspaces/${wsId}/teams/${teamId}`,
-      )
-      .send({
-        name: 'Updated',
-      })
+      .patch(`/organizations/${orgId}/workspaces/${wsId}/teams/${teamId}`)
+      .send({ name: 'Updated' })
       .expect(200);
 
-    expect(service.update).toHaveBeenCalledWith(
-      orgId,
-      wsId,
-      teamId,
-      {
-        name: 'Updated',
-      },
-    );
+    expect(service.update).toHaveBeenCalledWith(orgId, wsId, teamId, {
+      name: 'Updated',
+    });
   });
 
   it('rejects empty update data', async () => {
     await request(app.getHttpServer())
-      .patch(
-        `/organizations/${orgId}/workspaces/${wsId}/teams/${teamId}`,
-      )
+      .patch(`/organizations/${orgId}/workspaces/${wsId}/teams/${teamId}`)
       .send({})
       .expect(400);
 
@@ -186,16 +150,10 @@ describe('TeamsController', () => {
     service.remove.mockResolvedValue(undefined);
 
     await request(app.getHttpServer())
-      .delete(
-        `/organizations/${orgId}/workspaces/${wsId}/teams/${teamId}`,
-      )
+      .delete(`/organizations/${orgId}/workspaces/${wsId}/teams/${teamId}`)
       .expect(204);
 
-    expect(service.remove).toHaveBeenCalledWith(
-      orgId,
-      wsId,
-      teamId,
-    );
+    expect(service.remove).toHaveBeenCalledWith(orgId, wsId, teamId);
   });
 
   it('returns 404 when team not found', async () => {
@@ -206,16 +164,10 @@ describe('TeamsController', () => {
       }),
     );
 
-    const response = await request(
-      app.getHttpServer(),
-    )
-      .get(
-        `/organizations/${orgId}/workspaces/${wsId}/teams/${teamId}`,
-      )
+    const response = await request(app.getHttpServer())
+      .get(`/organizations/${orgId}/workspaces/${wsId}/teams/${teamId}`)
       .expect(404);
 
-    expect(response.body.code).toBe(
-      'TEAM_NOT_FOUND',
-    );
+    expect(response.body.code).toBe('TEAM_NOT_FOUND');
   });
 });
