@@ -24,24 +24,24 @@ vi.mock('../../src/prisma/db.js', () => ({
   },
 }));
 
-import { OrganizationWorkspaceLookupModule } from '../../src/organization-workspace-lookup/organization-workspace-lookup.module.js';
-import { OrganizationWorkspaceLookupService } from '../../src/organization-workspace-lookup/organization-workspace-lookup.service.js';
+import { WorkspaceModule } from '../../src/workspace/workspace.module.js';
+import { WorkspaceService } from '../../src/workspace/workspace.service.js';
 
 describe('Organization -> Workspace integration', () => {
   const organizationId = '550e8400-e29b-41d4-a716-446655440000';
 
   const workspaceId = '550e8400-e29b-41d4-a716-446655440001';
 
-  let lookupService: OrganizationWorkspaceLookupService;
+  let workspaceService: WorkspaceService;
 
   beforeEach(async () => {
     vi.resetAllMocks();
 
     const moduleRef = await Test.createTestingModule({
-      imports: [OrganizationWorkspaceLookupModule],
+      imports: [WorkspaceModule],
     }).compile();
 
-    lookupService = moduleRef.get(OrganizationWorkspaceLookupService);
+    workspaceService = moduleRef.get(WorkspaceService);
   });
 
   it('looks up workspace inside its organization', async () => {
@@ -62,7 +62,7 @@ describe('Organization -> Workspace integration', () => {
 
     mocks.workspaceQuery.findFirst.mockResolvedValue(workspace);
 
-    const result = await lookupService.assertWorkspaceInOrganization(
+    const result = await workspaceService.findOne(
       organizationId,
       workspaceId,
     );
@@ -85,14 +85,14 @@ describe('Organization -> Workspace integration', () => {
     mocks.workspaceQuery.findFirst.mockResolvedValue(null);
 
     await expect(
-      lookupService.assertWorkspaceInOrganization(organizationId, workspaceId),
+      workspaceService.findOne(organizationId, workspaceId),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('rejects lookup under a missing or archived organization before querying workspaces', async () => {
     mocks.organizationQuery.findFirst.mockResolvedValue(null);
     await expect(
-      lookupService.getWorkspace(organizationId, workspaceId),
+      workspaceService.findOne(organizationId, workspaceId),
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(mocks.organizationQuery.findFirst).toHaveBeenCalledWith({
       where: { id: organizationId, archivedAt: null },

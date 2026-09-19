@@ -62,6 +62,28 @@ describe('OrganizationService', () => {
     );
   });
 
+  it.each(['update', 'remove'] as const)(
+    'rejects %s for a missing or archived organization without writing',
+    async (operation) => {
+      mocks.organizationQuery.findFirst.mockResolvedValue(null);
+
+      const result =
+        operation === 'update'
+          ? service.update(organizationId, { name: 'Renamed' })
+          : service.remove(organizationId);
+
+      await expect(result).rejects.toMatchObject({
+        response: { code: 'ORGANIZATION_NOT_FOUND' },
+      });
+      expect(mocks.organizationQuery.findFirst).toHaveBeenCalledExactlyOnceWith(
+        {
+          where: { id: organizationId, archivedAt: null },
+        },
+      );
+      expect(mocks.organizationQuery.update).not.toHaveBeenCalled();
+    },
+  );
+
   it('soft deletes organization using archivedAt', async () => {
     mocks.organizationQuery.findFirst.mockResolvedValue({
       id: organizationId,

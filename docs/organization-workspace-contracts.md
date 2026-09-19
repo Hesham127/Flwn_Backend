@@ -13,10 +13,10 @@ WORKSPACE_NOT_FOUND
 
 ## Module ownership
 
-- `OrganizationModule` owns organization controllers, services, DTOs, and errors, and exports `OrganizationService`.
-- `WorkspaceModule` owns workspace controllers, services, DTOs, and errors. It imports `OrganizationModule` for parent validation and exports `WorkspaceService`.
-- `OrganizationWorkspaceLookupModule` owns `OrganizationWorkspaceLookupService` and its contract under `src/organization-workspace-lookup/`. It imports both feature modules and exports the lookup service.
-- Consumers of cross-feature validation import `OrganizationWorkspaceLookupModule` and inject `OrganizationWorkspaceLookupService`.
+- `OrganizationModule` owns organization controllers, services, and DTOs, and exports `OrganizationService`.
+- `WorkspaceModule` owns workspace controllers, services, and DTOs. It imports `OrganizationModule` for parent validation and exports `WorkspaceService`.
+- Consumers import the relevant feature module and inject `OrganizationService` or `WorkspaceService` directly.
+- Use `OrganizationService.findOne(id)` to validate an organization and `WorkspaceService.findOne(organizationId, workspaceId)` to validate a workspace within its organization. No separate lookup module or contract is needed.
 
 ## Persistence
 

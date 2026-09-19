@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { db } from '../prisma/db.js';
 
 import { CreateWorkspaceDto } from './dto/create-workspace.dto.js';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto.js';
 import { OrganizationService } from '../organization/organization.service.js';
-import { workspaceNotFound } from './errors/workspace.errors.js';
-
 @Injectable()
 export class WorkspaceService {
   constructor(private readonly organizationService: OrganizationService) {}
@@ -39,7 +38,10 @@ export class WorkspaceService {
     });
 
     if (!workspace) {
-      throw workspaceNotFound();
+      throw new NotFoundException({
+        code: 'WORKSPACE_NOT_FOUND',
+        message: 'Workspace not found',
+      });
     }
 
     return workspace;

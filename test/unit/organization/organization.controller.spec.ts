@@ -36,7 +36,7 @@ describe('OrganizationController', () => {
   };
 
   beforeEach(async () => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
     const moduleRef = await Test.createTestingModule({
       controllers: [OrganizationController],
@@ -74,7 +74,13 @@ describe('OrganizationController', () => {
         name: 'Flwn',
         description: 'Graduation project organization',
       })
-      .expect(201);
+      .expect(201)
+      .expect(organization);
+
+    expect(service.create).toHaveBeenCalledExactlyOnceWith({
+      name: 'Flwn',
+      description: 'Graduation project organization',
+    });
   });
 
   it('rejects invalid create data', async () => {
@@ -82,12 +88,19 @@ describe('OrganizationController', () => {
       .post('/organizations')
       .send({})
       .expect(400);
+
+    expect(service.create).not.toHaveBeenCalled();
   });
 
   it('lists organizations', async () => {
     service.findAll.mockResolvedValue([organization]);
 
-    await request(app.getHttpServer()).get('/organizations').expect(200);
+    await request(app.getHttpServer())
+      .get('/organizations')
+      .expect(200)
+      .expect([organization]);
+
+    expect(service.findAll).toHaveBeenCalledExactlyOnceWith();
   });
 
   it('returns one organization', async () => {
@@ -95,7 +108,10 @@ describe('OrganizationController', () => {
 
     await request(app.getHttpServer())
       .get(`/organizations/${organizationId}`)
-      .expect(200);
+      .expect(200)
+      .expect(organization);
+
+    expect(service.findOne).toHaveBeenCalledExactlyOnceWith(organizationId);
   });
 
   it('returns machine-readable not found error', async () => {
@@ -124,7 +140,12 @@ describe('OrganizationController', () => {
       .send({
         name: 'Flwn Updated',
       })
-      .expect(200);
+      .expect(200)
+      .expect({ ...organization, name: 'Flwn Updated' });
+
+    expect(service.update).toHaveBeenCalledExactlyOnceWith(organizationId, {
+      name: 'Flwn Updated',
+    });
   });
 
   it('rejects empty update data', async () => {
@@ -132,6 +153,32 @@ describe('OrganizationController', () => {
       .patch(`/organizations/${organizationId}`)
       .send({})
       .expect(400);
+
+    expect(service.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects a null name on update', async () => {
+    await request(app.getHttpServer())
+      .patch(`/organizations/${organizationId}`)
+      .send({ name: null })
+      .expect(400);
+
+    expect(service.update).not.toHaveBeenCalled();
+  });
+
+  it('allows clearing the description without supplying a name', async () => {
+    const updated = { ...organization, description: null };
+    service.update.mockResolvedValue(updated);
+
+    await request(app.getHttpServer())
+      .patch(`/organizations/${organizationId}`)
+      .send({ description: null })
+      .expect(200)
+      .expect(updated);
+
+    expect(service.update).toHaveBeenCalledExactlyOnceWith(organizationId, {
+      description: null,
+    });
   });
 
   it('archives an organization', async () => {
@@ -142,6 +189,9 @@ describe('OrganizationController', () => {
 
     await request(app.getHttpServer())
       .delete(`/organizations/${organizationId}`)
-      .expect(200);
+      .expect(200)
+      .expect({ id: organizationId, archived: true });
+
+    expect(service.remove).toHaveBeenCalledExactlyOnceWith(organizationId);
   });
 });

@@ -1,19 +1,6 @@
-import { Transform } from 'class-transformer';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { PartialType } from '@nestjs/swagger';
+import { CreateWorkspaceDto } from './create-workspace.dto.js';
 
-export class UpdateWorkspaceDto {
-  @ApiPropertyOptional({ example: 'Updated Engineering' })
-  @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @IsNotEmpty()
-  name?: string;
-
-  @ApiPropertyOptional({
-    example: 'Updated workspace description',
-  })
-  @IsOptional()
-  @IsString()
-  description?: string | null;
-}
+export class UpdateWorkspaceDto extends PartialType(CreateWorkspaceDto, {
+  skipNullProperties: false,
+}) {}

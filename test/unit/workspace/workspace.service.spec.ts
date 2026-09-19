@@ -56,6 +56,53 @@ describe('WorkspaceService', () => {
     expect(mocks.workspaceQuery.create).not.toHaveBeenCalled();
   });
 
+  it.each(['update', 'remove'] as const)(
+    'rejects %s when no active workspace belongs to the organization, without writing',
+    async (operation) => {
+      organizationService.findOne.mockResolvedValue({ id: organizationId });
+      mocks.workspaceQuery.findFirst.mockResolvedValue(null);
+
+      const result =
+        operation === 'update'
+          ? service.update(organizationId, workspaceId, { name: 'Renamed' })
+          : service.remove(organizationId, workspaceId);
+
+      await expect(result).rejects.toMatchObject({
+        response: { code: 'WORKSPACE_NOT_FOUND' },
+      });
+      expect(organizationService.findOne).toHaveBeenCalledExactlyOnceWith(
+        organizationId,
+      );
+      expect(mocks.workspaceQuery.findFirst).toHaveBeenCalledExactlyOnceWith({
+        where: { id: workspaceId, organizationId, archivedAt: null },
+      });
+      expect(mocks.workspaceQuery.update).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['update', 'remove'] as const)(
+    'rejects %s when parent validation fails, without querying or writing workspaces',
+    async (operation) => {
+      const error = new NotFoundException({
+        code: 'ORGANIZATION_NOT_FOUND',
+        message: 'Organization not found',
+      });
+      organizationService.findOne.mockRejectedValue(error);
+
+      const result =
+        operation === 'update'
+          ? service.update(organizationId, workspaceId, { name: 'Renamed' })
+          : service.remove(organizationId, workspaceId);
+
+      await expect(result).rejects.toBe(error);
+      expect(organizationService.findOne).toHaveBeenCalledExactlyOnceWith(
+        organizationId,
+      );
+      expect(mocks.workspaceQuery.findFirst).not.toHaveBeenCalled();
+      expect(mocks.workspaceQuery.update).not.toHaveBeenCalled();
+    },
+  );
+
   it('soft deletes workspace using archivedAt', async () => {
     organizationService.findOne.mockResolvedValue({
       id: organizationId,

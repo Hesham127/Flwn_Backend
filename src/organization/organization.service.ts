@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
+
 import { db } from '../prisma/db.js';
 
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
-import { organizationNotFound } from './errors/organization.errors.js';
 
 @Injectable()
 export class OrganizationService {
@@ -26,7 +27,10 @@ export class OrganizationService {
     });
 
     if (!organization) {
-      throw organizationNotFound();
+      throw new NotFoundException({
+        code: 'ORGANIZATION_NOT_FOUND',
+        message: 'Organization not found',
+      });
     }
 
     return organization;
