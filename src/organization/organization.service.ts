@@ -3,29 +3,27 @@ import { db } from '../prisma/db.js';
 
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
-import { organizationNotFound } from './errors/organization-workspace.errors.js';
+import { organizationNotFound } from './errors/organization.errors.js';
 
 @Injectable()
 export class OrganizationService {
   async create(dto: CreateOrganizationDto) {
-    return db.orm.public.Organization.create({
-      name: dto.name,
-      description: dto.description ?? null,
+    return db.organization.create({
+      data: { name: dto.name, description: dto.description ?? null },
     });
   }
 
   async findAll() {
-    return db.orm.public.Organization
-      .where((organization) => organization.archivedAt.isNull())
-      .orderBy((organization) => organization.createdAt.desc())
-      .all();
+    return db.organization.findMany({
+      where: { archivedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findOne(id: string) {
-    const organization = await db.orm.public.Organization
-      .where({ id })
-      .where((organization) => organization.archivedAt.isNull())
-      .first();
+    const organization = await db.organization.findFirst({
+      where: { id, archivedAt: null },
+    });
 
     if (!organization) {
       throw organizationNotFound();
@@ -34,10 +32,7 @@ export class OrganizationService {
     return organization;
   }
 
-  async update(
-    id: string,
-    dto: UpdateOrganizationDto,
-  ) {
+  async update(id: string, dto: UpdateOrganizationDto) {
     await this.findOne(id);
 
     const data: {
@@ -53,19 +48,16 @@ export class OrganizationService {
       data.description = dto.description;
     }
 
-    return db.orm.public.Organization
-      .where({ id })
-      .update(data);
+    return db.organization.update({ where: { id }, data });
   }
 
   async remove(id: string) {
     await this.findOne(id);
 
-    await db.orm.public.Organization
-      .where({ id })
-      .update({
-        archivedAt: new Date(),
-      });
+    await db.organization.update({
+      where: { id },
+      data: { archivedAt: new Date() },
+    });
 
     return {
       id,

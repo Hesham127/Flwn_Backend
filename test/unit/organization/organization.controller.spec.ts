@@ -1,13 +1,6 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../prisma/db.js', () => ({
+vi.mock('../../../src/prisma/db.js', () => ({
   db: {},
 }));
 
@@ -19,14 +12,13 @@ import {
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
-import { OrganizationController } from './organization.controller.js';
-import { OrganizationService } from './organization.service.js';
+import { OrganizationController } from '../../../src/organization/organization.controller.js';
+import { OrganizationService } from '../../../src/organization/organization.service.js';
 
 describe('OrganizationController', () => {
   let app: INestApplication;
 
-  const organizationId =
-    '550e8400-e29b-41d4-a716-446655440000';
+  const organizationId = '550e8400-e29b-41d4-a716-446655440000';
 
   const organization = {
     id: organizationId,
@@ -95,9 +87,7 @@ describe('OrganizationController', () => {
   it('lists organizations', async () => {
     service.findAll.mockResolvedValue([organization]);
 
-    await request(app.getHttpServer())
-      .get('/organizations')
-      .expect(200);
+    await request(app.getHttpServer()).get('/organizations').expect(200);
   });
 
   it('returns one organization', async () => {
@@ -120,9 +110,7 @@ describe('OrganizationController', () => {
       .get(`/organizations/${organizationId}`)
       .expect(404);
 
-    expect(response.body.code).toBe(
-      'ORGANIZATION_NOT_FOUND',
-    );
+    expect(response.body.code).toBe('ORGANIZATION_NOT_FOUND');
   });
 
   it('updates an organization', async () => {

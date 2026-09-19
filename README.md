@@ -49,7 +49,7 @@ $ npm run start:prod
 ## Run tests
 
 ```bash
-# unit tests
+# unit and cross-module integration tests
 $ npm run test
 
 # e2e tests
@@ -58,6 +58,11 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 ```
+
+Tests live under `test/unit/` (organized by feature), `test/integration/`
+(cross-module behavior), and `test/e2e/` (application HTTP flows).
+See [Organization / Workspace contracts](docs/organization-workspace-contracts.md)
+for module ownership, dependencies, and Prisma 7 persistence details.
 
 ## Deployment
 

@@ -4,15 +4,17 @@ import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateOrganizationDto {
   @ApiProperty({ example: 'Flwn' })
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim() : value,
-  )
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @IsNotEmpty()
   name!: string;
 
-  @ApiPropertyOptional({ example: 'Graduation project organization' })
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    example: 'Graduation project organization',
+  })
   @IsOptional()
   @IsString()
-  description?: string;
+  description?: string | null;
 }

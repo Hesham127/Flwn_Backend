@@ -5,9 +5,7 @@ import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 export class UpdateWorkspaceDto {
   @ApiPropertyOptional({ example: 'Updated Engineering' })
   @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim() : value,
-  )
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @IsNotEmpty()
   name?: string;

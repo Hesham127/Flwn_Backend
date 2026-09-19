@@ -25,9 +25,7 @@ import { WorkspaceService } from './workspace.service.js';
 @ApiTags('workspaces')
 @Controller('organizations/:organizationId/workspaces')
 export class WorkspaceController {
-  constructor(
-    private readonly workspaceService: WorkspaceService,
-  ) {}
+  constructor(private readonly workspaceService: WorkspaceService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create workspace' })
@@ -59,9 +57,7 @@ export class WorkspaceController {
     @Param('organizationId', new ParseUUIDPipe())
     organizationId: string,
   ) {
-    return this.workspaceService.findByOrganization(
-      organizationId,
-    );
+    return this.workspaceService.findByOrganization(organizationId);
   }
 
   @Get(':id')
@@ -77,10 +73,7 @@ export class WorkspaceController {
     organizationId: string,
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
-    return this.workspaceService.findOne(
-      organizationId,
-      id,
-    );
+    return this.workspaceService.findOne(organizationId, id);
   }
 
   @Patch(':id')
@@ -104,11 +97,7 @@ export class WorkspaceController {
       });
     }
 
-    return this.workspaceService.update(
-      organizationId,
-      id,
-      dto,
-    );
+    return this.workspaceService.update(organizationId, id, dto);
   }
 
   @Delete(':id')
@@ -121,9 +110,6 @@ export class WorkspaceController {
     organizationId: string,
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
-    return this.workspaceService.remove(
-      organizationId,
-      id,
-    );
+    return this.workspaceService.remove(organizationId, id);
   }
 }

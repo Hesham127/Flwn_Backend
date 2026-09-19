@@ -1,13 +1,6 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../prisma/db.js', () => ({
+vi.mock('../../../src/prisma/db.js', () => ({
   db: {},
 }));
 
@@ -19,17 +12,15 @@ import {
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
-import { WorkspaceController } from './workspace.controller.js';
-import { WorkspaceService } from './workspace.service.js';
+import { WorkspaceController } from '../../../src/workspace/workspace.controller.js';
+import { WorkspaceService } from '../../../src/workspace/workspace.service.js';
 
 describe('WorkspaceController', () => {
   let app: INestApplication;
 
-  const organizationId =
-    '550e8400-e29b-41d4-a716-446655440000';
+  const organizationId = '550e8400-e29b-41d4-a716-446655440000';
 
-  const workspaceId =
-    '550e8400-e29b-41d4-a716-446655440001';
+  const workspaceId = '550e8400-e29b-41d4-a716-446655440001';
 
   const workspace = {
     id: workspaceId,
@@ -111,15 +102,11 @@ describe('WorkspaceController', () => {
       })
       .expect(404);
 
-    expect(response.body.code).toBe(
-      'ORGANIZATION_NOT_FOUND',
-    );
+    expect(response.body.code).toBe('ORGANIZATION_NOT_FOUND');
   });
 
   it('lists workspaces by organization', async () => {
-    service.findByOrganization.mockResolvedValue([
-      workspace,
-    ]);
+    service.findByOrganization.mockResolvedValue([workspace]);
 
     await request(app.getHttpServer())
       .get(`/organizations/${organizationId}/workspaces`)
@@ -130,9 +117,7 @@ describe('WorkspaceController', () => {
     service.findOne.mockResolvedValue(workspace);
 
     await request(app.getHttpServer())
-      .get(
-        `/organizations/${organizationId}/workspaces/${workspaceId}`,
-      )
+      .get(`/organizations/${organizationId}/workspaces/${workspaceId}`)
       .expect(200);
   });
 
@@ -145,14 +130,10 @@ describe('WorkspaceController', () => {
     );
 
     const response = await request(app.getHttpServer())
-      .get(
-        `/organizations/${organizationId}/workspaces/${workspaceId}`,
-      )
+      .get(`/organizations/${organizationId}/workspaces/${workspaceId}`)
       .expect(404);
 
-    expect(response.body.code).toBe(
-      'WORKSPACE_NOT_FOUND',
-    );
+    expect(response.body.code).toBe('WORKSPACE_NOT_FOUND');
   });
 
   it('updates a workspace', async () => {
@@ -162,9 +143,7 @@ describe('WorkspaceController', () => {
     });
 
     await request(app.getHttpServer())
-      .patch(
-        `/organizations/${organizationId}/workspaces/${workspaceId}`,
-      )
+      .patch(`/organizations/${organizationId}/workspaces/${workspaceId}`)
       .send({
         name: 'Updated Engineering',
       })
@@ -173,12 +152,9 @@ describe('WorkspaceController', () => {
 
   it('does not allow organizationId to change', async () => {
     await request(app.getHttpServer())
-      .patch(
-        `/organizations/${organizationId}/workspaces/${workspaceId}`,
-      )
+      .patch(`/organizations/${organizationId}/workspaces/${workspaceId}`)
       .send({
-        organizationId:
-          '550e8400-e29b-41d4-a716-446655440099',
+        organizationId: '550e8400-e29b-41d4-a716-446655440099',
       })
       .expect(400);
   });
@@ -190,9 +166,7 @@ describe('WorkspaceController', () => {
     });
 
     await request(app.getHttpServer())
-      .delete(
-        `/organizations/${organizationId}/workspaces/${workspaceId}`,
-      )
+      .delete(`/organizations/${organizationId}/workspaces/${workspaceId}`)
       .expect(200)
       .expect({
         id: workspaceId,
