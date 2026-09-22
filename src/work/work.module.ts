@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { WorkRulesService } from './work.rules';
+import { WorkRulesService } from './work.rules.js';
 import { TaskController } from './task.controller.js';
 import { TaskService } from './task.service.js';
 import { InMemoryTaskRepository } from './task.repository.js';
