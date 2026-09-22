@@ -137,9 +137,11 @@ model Member {
 
   createdProjects  Project[]  @relation("ProjectCreator")
   createdWorkItems WorkItem[] @relation("WorkItemCreator")
+  createdSprints   Sprint[]    @relation("SprintCreator")
   createdTasks     Task[]     @relation("TaskCreator")
 
   assignedTasks Task[] @relation("TaskAssignee")
+  projectMemberships ProjectMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -195,8 +197,11 @@ model Project {
 
   createdBy Member @relation("ProjectCreator", fields: [createdById], references: [id])
 
+  projectMembers ProjectMember[]
   backlogs Backlog[]
+  workItems WorkItem[]
   sprints  Sprint[]
+  tasks    Task[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -204,6 +209,33 @@ model Project {
   @@index([workspaceId])
   @@index([teamId])
   @@index([createdById])
+}
+
+
+// ======================================================
+// PROJECT MEMBERSHIP
+// ======================================================
+
+model ProjectMember {
+  projectId String
+  memberId  String
+
+  project Project @relation(
+    fields: [projectId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  member Member @relation(
+    fields: [memberId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  createdAt DateTime @default(now())
+
+  @@id([projectId, memberId])
+  @@index([memberId])
 }
 
 
@@ -236,6 +268,7 @@ model Backlog {
 
 model WorkItem {
   id          String @id @default(uuid())
+  projectId   String
   backlogId   String
   createdById String
 
@@ -246,7 +279,17 @@ model WorkItem {
   priority Priority       @default(MEDIUM)
   status   WorkItemStatus @default(OPEN)
 
-  backlog Backlog @relation(fields: [backlogId], references: [id], onDelete: Cascade)
+  project Project @relation(
+    fields: [projectId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  backlog Backlog @relation(
+    fields: [backlogId],
+    references: [id],
+    onDelete: Cascade
+  )
 
   createdBy Member @relation("WorkItemCreator", fields: [createdById], references: [id])
 
@@ -255,6 +298,9 @@ model WorkItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([id, projectId])
+  @@index([projectId, status])
+  @@index([projectId, priority])
   @@index([backlogId])
   @@index([createdById])
 }
@@ -267,6 +313,7 @@ model WorkItem {
 model Sprint {
   id        String @id @default(uuid())
   projectId String
+  createdById String
 
   name String
   goal String?
@@ -278,12 +325,22 @@ model Sprint {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  createdBy Member @relation(
+    "SprintCreator",
+    fields: [createdById],
+    references: [id]
+  )
+
   tasks Task[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([projectId])
+  @@unique([id, projectId])
+  @@unique([projectId, name])
+  @@index([projectId, status])
+  @@index([projectId, startDate])
+  @@index([createdById])
 }
 
 
@@ -292,8 +349,9 @@ model Sprint {
 // ======================================================
 
 model Task {
-  id String @id @default(uuid())
+  id        String @id @default(uuid())
 
+  projectId String
   workItemId String
   createdById String
 
@@ -315,17 +373,40 @@ model Task {
   dueDate     DateTime?
   completedAt DateTime?
 
-  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  project Project @relation(
+    fields: [projectId],
+    references: [id],
+    onDelete: Cascade
+  )
 
-  sprint Sprint? @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  workItem WorkItem @relation(
+    fields: [workItemId, projectId],
+    references: [id, projectId],
+    onDelete: Cascade
+  )
+
+  sprint Sprint? @relation(
+    fields: [sprintId],
+    references: [id],
+    onDelete: SetNull
+  )
 
   assignee Member? @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
 
-  createdBy Member @relation("TaskCreator", fields: [createdById], references: [id])
+  createdBy Member @relation(
+    "TaskCreator",
+    fields: [createdById],
+    references: [id],
+    onDelete: Restrict
+  )
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([projectId, status])
+  @@index([projectId, sprintId])
+  @@index([projectId, assigneeId])
+  @@index([projectId, createdById])
   @@index([workItemId])
   @@index([sprintId])
   @@index([assigneeId])
