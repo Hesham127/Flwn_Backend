@@ -9,7 +9,6 @@ datasource db {
   provider = "postgresql"
 }
 
-
 // ======================================================
 // ENUMS
 // ======================================================
@@ -71,7 +70,6 @@ enum SprintStatus {
   CANCELLED
 }
 
-
 // ======================================================
 // ORGANIZATION
 // ======================================================
@@ -88,7 +86,6 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
 
 // ======================================================
 // WORKSPACE
@@ -112,7 +109,6 @@ model Workspace {
 
   @@index([organizationId])
 }
-
 
 // ======================================================
 // MEMBER
@@ -149,7 +145,6 @@ model Member {
   @@unique([organizationId, email])
   @@index([organizationId])
 }
-
 
 // ======================================================
 // TEAM
@@ -211,7 +206,6 @@ model Project {
   @@index([createdById])
 }
 
-
 // ======================================================
 // PROJECT MEMBERSHIP
 // ======================================================
@@ -220,24 +214,15 @@ model ProjectMember {
   projectId String
   memberId  String
 
-  project Project @relation(
-    fields: [projectId],
-    references: [id],
-    onDelete: Cascade
-  )
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  member Member @relation(
-    fields: [memberId],
-    references: [id],
-    onDelete: Cascade
-  )
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
   @@id([projectId, memberId])
   @@index([memberId])
 }
-
 
 // ======================================================
 // BACKLOG
@@ -261,7 +246,6 @@ model Backlog {
   @@index([projectId])
 }
 
-
 // ======================================================
 // WORK ITEM
 // ======================================================
@@ -279,17 +263,9 @@ model WorkItem {
   priority Priority       @default(MEDIUM)
   status   WorkItemStatus @default(OPEN)
 
-  project Project @relation(
-    fields: [projectId],
-    references: [id],
-    onDelete: Cascade
-  )
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  backlog Backlog @relation(
-    fields: [backlogId],
-    references: [id],
-    onDelete: Cascade
-  )
+  backlog Backlog @relation(fields: [backlogId], references: [id], onDelete: Cascade)
 
   createdBy Member @relation("WorkItemCreator", fields: [createdById], references: [id])
 
@@ -304,7 +280,6 @@ model WorkItem {
   @@index([backlogId])
   @@index([createdById])
 }
-
 
 // ======================================================
 // SPRINT
@@ -325,11 +300,7 @@ model Sprint {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  createdBy Member @relation(
-    "SprintCreator",
-    fields: [createdById],
-    references: [id]
-  )
+  createdBy Member @relation("SprintCreator", fields: [createdById], references: [id])
 
   tasks Task[]
 
@@ -342,7 +313,6 @@ model Sprint {
   @@index([projectId, startDate])
   @@index([createdById])
 }
-
 
 // ======================================================
 // TASK
@@ -373,32 +343,15 @@ model Task {
   dueDate     DateTime?
   completedAt DateTime?
 
-  project Project @relation(
-    fields: [projectId],
-    references: [id],
-    onDelete: Cascade
-  )
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  workItem WorkItem @relation(
-    fields: [workItemId, projectId],
-    references: [id, projectId],
-    onDelete: Cascade
-  )
+  workItem WorkItem @relation(fields: [workItemId, projectId], references: [id, projectId], onDelete: Cascade)
 
-  sprint Sprint? @relation(
-    fields: [sprintId],
-    references: [id],
-    onDelete: SetNull
-  )
+  sprint Sprint? @relation(fields: [sprintId], references: [id], onDelete: SetNull)
 
   assignee Member? @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
 
-  createdBy Member @relation(
-    "TaskCreator",
-    fields: [createdById],
-    references: [id],
-    onDelete: Restrict
-  )
+  createdBy Member @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
