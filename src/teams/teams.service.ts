@@ -30,7 +30,10 @@ export class TeamsService {
   }
 
   async findAll(orgId: string, workspaceId: string, query: TeamQueryDto) {
-      workspaceId,
+    await this.workspaceService.findOne(orgId, workspaceId);
+    return db.team.findMany({
+      where: {
+        workspaceId,
         ...(query.search
           ? {
               OR: [
