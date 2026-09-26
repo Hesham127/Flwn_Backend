@@ -1,22 +1,11 @@
-import {
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 const mocks = vi.hoisted(() => {
   const memberQuery = {
-    where: vi.fn(),
-    orderBy: vi.fn(),
-    all: vi.fn(),
-    first: vi.fn(),
+    findMany: vi.fn(),
+    findFirst: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
   };
@@ -26,11 +15,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('../../src/prisma/db.js', () => ({
   db: {
-    orm: {
-      public: {
-        Member: mocks.memberQuery,
-      },
-    },
+    member: mocks.memberQuery,
   },
 }));
 
@@ -48,9 +33,6 @@ describe('MembersService', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-
-    mocks.memberQuery.where.mockReturnValue(mocks.memberQuery);
-    mocks.memberQuery.orderBy.mockReturnValue(mocks.memberQuery);
 
     organizationService.findOne.mockResolvedValue({
       id: organizationId,
@@ -70,7 +52,7 @@ describe('MembersService', () => {
       status: 'ACTIVE',
     };
 
-    mocks.memberQuery.first.mockResolvedValue(null);
+    mocks.memberQuery.findFirst.mockResolvedValue(null);
     mocks.memberQuery.create.mockResolvedValue(member);
 
     const result = await service.create(organizationId, {
@@ -81,11 +63,13 @@ describe('MembersService', () => {
     });
 
     expect(mocks.memberQuery.create).toHaveBeenCalledWith({
-      organizationId,
-      name: 'Anas Ahmed',
-      email: 'anas@example.com',
-      type: 'HUMAN',
-      role: 'DEVELOPER',
+      data: {
+        organizationId,
+        name: 'Anas Ahmed',
+        email: 'anas@example.com',
+        type: 'HUMAN',
+        role: 'DEVELOPER',
+      },
     });
 
     expect(result).toEqual(member);
@@ -102,7 +86,7 @@ describe('MembersService', () => {
       status: 'ACTIVE',
     };
 
-    mocks.memberQuery.first.mockResolvedValue(null);
+    mocks.memberQuery.findFirst.mockResolvedValue(null);
     mocks.memberQuery.create.mockResolvedValue(member);
 
     const result = await service.create(organizationId, {
@@ -113,11 +97,13 @@ describe('MembersService', () => {
     });
 
     expect(mocks.memberQuery.create).toHaveBeenCalledWith({
-      organizationId,
-      name: 'AI Agent',
-      email: 'ai@example.com',
-      type: 'AI',
-      role: 'AI_DEVELOPER',
+      data: {
+        organizationId,
+        name: 'AI Agent',
+        email: 'ai@example.com',
+        type: 'AI',
+        role: 'AI_DEVELOPER',
+      },
     });
 
     expect(result).toEqual(member);
@@ -144,7 +130,7 @@ describe('MembersService', () => {
   });
 
   it('rejects duplicate email in the same organization', async () => {
-    mocks.memberQuery.first.mockResolvedValue({
+    mocks.memberQuery.findFirst.mockResolvedValue({
       id: memberId,
       organizationId,
       email: 'anas@example.com',
@@ -163,7 +149,7 @@ describe('MembersService', () => {
   });
 
   it('throws MEMBER_NOT_FOUND when member does not exist', async () => {
-    mocks.memberQuery.first.mockResolvedValue(null);
+    mocks.memberQuery.findFirst.mockResolvedValue(null);
 
     await expect(
       service.findOne(organizationId, memberId),
@@ -188,27 +174,22 @@ describe('MembersService', () => {
       },
     ];
 
-    mocks.memberQuery.all.mockResolvedValue(members);
+    mocks.memberQuery.findMany.mockResolvedValue(members);
 
     const result = await service.findAll(organizationId, {
       type: 'HUMAN',
       status: 'ACTIVE',
     });
 
-    expect(mocks.memberQuery.where).toHaveBeenCalledWith({
-      organizationId,
-    });
-    expect(mocks.memberQuery.where).toHaveBeenCalledWith({
-      type: 'HUMAN',
-    });
-    expect(mocks.memberQuery.where).toHaveBeenCalledWith({
-      status: 'ACTIVE',
+    expect(mocks.memberQuery.findMany).toHaveBeenCalledWith({
+      where: { organizationId, type: 'HUMAN', status: 'ACTIVE' },
+      orderBy: { createdAt: 'desc' },
     });
     expect(result).toEqual(members);
   });
 
   it('updates a member', async () => {
-    mocks.memberQuery.first.mockResolvedValue({
+    mocks.memberQuery.findFirst.mockResolvedValue({
       id: memberId,
       organizationId,
       name: 'Anas Ahmed',
@@ -234,8 +215,11 @@ describe('MembersService', () => {
     });
 
     expect(mocks.memberQuery.update).toHaveBeenCalledWith({
-      name: 'Anas Updated',
-      role: 'TEAM_LEAD',
+      where: { id: memberId, organizationId },
+      data: {
+        name: 'Anas Updated',
+        role: 'TEAM_LEAD',
+      },
     });
 
     expect(result).toMatchObject({
@@ -245,7 +229,7 @@ describe('MembersService', () => {
   });
 
   it('deactivates a member using INACTIVE status', async () => {
-    mocks.memberQuery.first.mockResolvedValue({
+    mocks.memberQuery.findFirst.mockResolvedValue({
       id: memberId,
       organizationId,
       name: 'Anas Ahmed',
@@ -260,7 +244,10 @@ describe('MembersService', () => {
     const result = await service.remove(organizationId, memberId);
 
     expect(mocks.memberQuery.update).toHaveBeenCalledWith({
-      status: 'INACTIVE',
+      where: { id: memberId, organizationId },
+      data: {
+        status: 'INACTIVE',
+      },
     });
 
     expect(result).toEqual({

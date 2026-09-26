@@ -4,10 +4,7 @@ import { CreateMemberDto } from './dto/create-member.dto.js';
 import { UpdateMemberDto } from './dto/update-member.dto.js';
 import { MemberQueryDto } from './dto/member-query.dto.js';
 import { OrganizationService } from '../organization/organization.service.js';
-import {
-  memberAlreadyExists,
-  memberNotFound,
-} from './errors/member.errors.js';
+import { memberAlreadyExists, memberNotFound } from './errors/member.errors.js';
 
 @Injectable()
 export class MembersService {
@@ -22,21 +19,22 @@ export class MembersService {
 
     const email = dto.email.toLowerCase();
 
-    const existing = await db.orm.public.Member
-      .where({ organizationId: orgId })
-      .where({ email })
-      .first();
+    const existing = await db.member.findFirst({
+      where: { organizationId: orgId, email },
+    });
 
     if (existing) {
       throw memberAlreadyExists(email);
     }
 
-    return db.orm.public.Member.create({
-      organizationId: orgId,
-      name: dto.name,
-      email,
-      type: dto.type ?? 'HUMAN',
-      role: dto.role ?? 'DEVELOPER',
+    return db.member.create({
+      data: {
+        organizationId: orgId,
+        name: dto.name,
+        email,
+        type: dto.type ?? 'HUMAN',
+        role: dto.role ?? 'DEVELOPER',
+      },
     });
   }
 
@@ -45,43 +43,31 @@ export class MembersService {
 
     const { type, role, status, search } = query;
 
-    let whereBuilder = db.orm.public.Member
-      .where({ organizationId: orgId });
-
-    if (type) {
-      whereBuilder = whereBuilder.where({ type });
-    }
-
-    if (role) {
-      whereBuilder = whereBuilder.where({ role });
-    }
-
-    if (status) {
-      whereBuilder = whereBuilder.where({ status });
-    }
-
-    if (search) {
-      const allMembers = await whereBuilder.all();
-
-      return allMembers.filter(
-        (member: any) =>
-          member.name.toLowerCase().includes(search.toLowerCase()) ||
-          member.email.toLowerCase().includes(search.toLowerCase()),
-      );
-    }
-
-    return whereBuilder
-      .orderBy((member: any) => member.createdAt.desc())
-      .all();
+    return db.member.findMany({
+      where: {
+        organizationId: orgId,
+        type,
+        role,
+        status,
+        ...(search
+          ? {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' as const } },
+                { email: { contains: search, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findOne(orgId: string, memberId: string) {
     await this.validateOrganization(orgId);
 
-    const member = await db.orm.public.Member
-      .where({ id: memberId })
-      .where({ organizationId: orgId })
-      .first();
+    const member = await db.member.findFirst({
+      where: { id: memberId, organizationId: orgId },
+    });
 
     if (!member) {
       throw memberNotFound();
@@ -90,11 +76,7 @@ export class MembersService {
     return member;
   }
 
-  async update(
-    orgId: string,
-    memberId: string,
-    dto: UpdateMemberDto,
-  ) {
+  async update(orgId: string, memberId: string, dto: UpdateMemberDto) {
     await this.findOne(orgId, memberId);
 
     const data: {
@@ -115,21 +97,19 @@ export class MembersService {
       data.status = dto.status;
     }
 
-    return db.orm.public.Member
-      .where({ id: memberId })
-      .where({ organizationId: orgId })
-      .update(data);
+    return db.member.update({
+      where: { id: memberId, organizationId: orgId },
+      data,
+    });
   }
 
   async remove(orgId: string, memberId: string) {
     await this.findOne(orgId, memberId);
 
-    await db.orm.public.Member
-      .where({ id: memberId })
-      .where({ organizationId: orgId })
-      .update({
-        status: 'INACTIVE',
-      });
+    await db.member.update({
+      where: { id: memberId, organizationId: orgId },
+      data: { status: 'INACTIVE' },
+    });
 
     return {
       id: memberId,

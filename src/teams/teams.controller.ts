@@ -15,6 +15,7 @@ import {
 
 import {
   ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -27,6 +28,7 @@ import { TeamsService } from './teams.service.js';
 import { CreateTeamDto } from './dto/create-team.dto.js';
 import { UpdateTeamDto } from './dto/update-team.dto.js';
 import { TeamQueryDto } from './dto/team-query.dto.js';
+import { AddTeamMemberDto } from './dto/add-team-member.dto.js';
 
 @ApiTags('teams')
 @Controller('organizations/:organizationId/workspaces/:workspaceId/teams')
@@ -47,11 +49,7 @@ export class TeamsController {
     workspaceId: string,
     @Body() dto: CreateTeamDto,
   ) {
-    return this.teamsService.create(
-      organizationId,
-      workspaceId,
-      dto,
-    );
+    return this.teamsService.create(organizationId, workspaceId, dto);
   }
 
   @Get()
@@ -67,11 +65,7 @@ export class TeamsController {
     workspaceId: string,
     @Query() query: TeamQueryDto,
   ) {
-    return this.teamsService.findAll(
-      organizationId,
-      workspaceId,
-      query,
-    );
+    return this.teamsService.findAll(organizationId, workspaceId, query);
   }
 
   @Get(':id')
@@ -94,11 +88,7 @@ export class TeamsController {
     @Param('id', new ParseUUIDPipe())
     id: string,
   ) {
-    return this.teamsService.findOne(
-      organizationId,
-      workspaceId,
-      id,
-    );
+    return this.teamsService.findOne(organizationId, workspaceId, id);
   }
 
   @Patch(':id')
@@ -117,23 +107,14 @@ export class TeamsController {
     id: string,
     @Body() dto: UpdateTeamDto,
   ) {
-    if (
-      Object.values(dto).every(
-        (value) => value === undefined,
-      )
-    ) {
+    if (Object.values(dto).every((value) => value === undefined)) {
       throw new BadRequestException({
         code: 'VALIDATION_ERROR',
         message: 'At least one field is required',
       });
     }
 
-    return this.teamsService.update(
-      organizationId,
-      workspaceId,
-      id,
-      dto,
-    );
+    return this.teamsService.update(organizationId, workspaceId, id, dto);
   }
 
   @Delete(':id')
@@ -149,10 +130,73 @@ export class TeamsController {
     @Param('id', new ParseUUIDPipe())
     id: string,
   ) {
-    return this.teamsService.remove(
+    return this.teamsService.remove(organizationId, workspaceId, id);
+  }
+  @Get(':teamId/members')
+  @ApiOperation({ summary: 'List all members in a team' })
+  @ApiOkResponse({ description: 'Team members retrieved' })
+  @ApiNotFoundResponse({
+    description: 'Organization, Workspace, or Team not found',
+  })
+  findMembers(
+    @Param('organizationId', new ParseUUIDPipe()) organizationId: string,
+    @Param('workspaceId', new ParseUUIDPipe()) workspaceId: string,
+    @Param('teamId', new ParseUUIDPipe()) teamId: string,
+  ) {
+    return this.teamsService.findMembers(organizationId, workspaceId, teamId);
+  }
+
+  @Post(':teamId/members')
+  @ApiOperation({ summary: 'Add a member to a team' })
+  @ApiCreatedResponse({ description: 'Member added to team' })
+  @ApiNotFoundResponse({
+    description: 'Organization, Workspace, Team, or Member not found',
+  })
+  @ApiConflictResponse({ description: 'Member already in team' })
+  addMember(
+    @Param('organizationId', new ParseUUIDPipe()) organizationId: string,
+    @Param('workspaceId', new ParseUUIDPipe()) workspaceId: string,
+    @Param('teamId', new ParseUUIDPipe()) teamId: string,
+    @Body() dto: AddTeamMemberDto,
+  ) {
+    return this.teamsService.addMember(
       organizationId,
       workspaceId,
-      id,
+      teamId,
+      dto.memberId,
     );
+  }
+
+  @Delete(':teamId/members/:memberId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove a member from a team' })
+  @ApiNoContentResponse({ description: 'Member removed from team' })
+  @ApiNotFoundResponse({
+    description:
+      'Organization, Workspace, Team, Member, or relationship not found',
+  })
+  removeMember(
+    @Param('organizationId', new ParseUUIDPipe()) organizationId: string,
+    @Param('workspaceId', new ParseUUIDPipe()) workspaceId: string,
+    @Param('teamId', new ParseUUIDPipe()) teamId: string,
+    @Param('memberId', new ParseUUIDPipe()) memberId: string,
+  ) {
+    return this.teamsService.removeMember(
+      organizationId,
+      workspaceId,
+      teamId,
+      memberId,
+    );
+  }
+
+  @Get(':teamId/members/member/:memberId/teams')
+  @ApiOperation({ summary: 'List all teams a member belongs to' })
+  @ApiOkResponse({ description: 'Member teams retrieved' })
+  @ApiNotFoundResponse({ description: 'Organization or Member not found' })
+  findMemberTeams(
+    @Param('organizationId', new ParseUUIDPipe()) organizationId: string,
+    @Param('memberId', new ParseUUIDPipe()) memberId: string,
+  ) {
+    return this.teamsService.findMemberTeams(organizationId, memberId);
   }
 }

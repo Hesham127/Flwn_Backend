@@ -1,169 +1,126 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
-const mocks = vi.hoisted(() => {
-  const teamQuery = {
-    where: vi.fn(),
-    include: vi.fn(),
-    first: vi.fn(),
-    update: vi.fn(),
-  };
-  const memberQuery = {
-    where: vi.fn(),
-    include: vi.fn(),
-    first: vi.fn(),
-  };
-  return { teamQuery, memberQuery };
-});
-
-vi.mock('../../src/prisma/db.js', () => ({
-  db: {
-    orm: {
-      public: {
-        Team: mocks.teamQuery,
-        Member: mocks.memberQuery,
-      },
-    },
-  },
+const mocks = vi.hoisted(() => ({
+  team: { findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+  member: { findMany: vi.fn() },
 }));
-
-import { TeamMembersService } from '../../src/teams/team-members.service.js';
-import { MembersService } from '../../src/members/members.service.js';
+vi.mock('../../src/prisma/db.js', () => ({ db: mocks }));
 import { TeamsService } from '../../src/teams/teams.service.js';
-import { OrganizationWorkspaceLookupService } from '../../src/organization/organization-workspace-lookup.service.js';
 
-describe('TeamMembersService', () => {
+describe('TeamsService membership', () => {
   const orgId = 'org-uuid';
   const workspaceId = 'ws-uuid';
   const teamId = 'team-uuid';
   const memberId = 'member-uuid';
-
-  let service: TeamMembersService;
-  const lookupService = {
-    assertWorkspaceInOrganization: vi.fn(),
-  };
-  const membersService = {
-    findOne: vi.fn(),
-  };
-  const teamsService = {
-    findOne: vi.fn(),
-  };
+  const workspaceService = { findOne: vi.fn() };
+  const membersService = { findOne: vi.fn() };
+  let service: TeamsService;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    mocks.teamQuery.where.mockReturnValue(mocks.teamQuery);
-    mocks.teamQuery.include.mockReturnValue(mocks.teamQuery);
-    mocks.memberQuery.where.mockReturnValue(mocks.memberQuery);
-    mocks.memberQuery.include.mockReturnValue(mocks.memberQuery);
-
-    service = new TeamMembersService(
+    vi.resetAllMocks();
+    workspaceService.findOne.mockResolvedValue({ id: workspaceId });
+    membersService.findOne.mockResolvedValue({ id: memberId });
+    mocks.team.findFirst.mockResolvedValue({ id: teamId });
+    service = new TeamsService(
+      workspaceService as never,
       membersService as never,
-      teamsService as never,
-      lookupService as never,
     );
   });
 
-  describe('add', () => {
-    it('adds a member to a team', async () => {
-      lookupService.assertWorkspaceInOrganization.mockResolvedValue(undefined);
-      teamsService.findOne.mockResolvedValue({ id: teamId });
-      membersService.findOne.mockResolvedValue({ id: memberId });
-      mocks.teamQuery.first.mockResolvedValue({ members: [] });
-      mocks.teamQuery.update.mockResolvedValue({ teamId, memberId });
-
-      const result = await service.add(orgId, workspaceId, teamId, memberId);
-      expect(result).toEqual({ teamId, memberId });
-      expect(mocks.teamQuery.update).toHaveBeenCalledWith({
-        members: { connect: { id: memberId } },
-      });
+  it('connects a member from the same organization', async () => {
+    mocks.team.findFirst
+      .mockResolvedValueOnce({ id: teamId })
+      .mockResolvedValueOnce(null);
+    mocks.team.update.mockResolvedValue({ id: teamId });
+    expect(
+      await service.addMember(orgId, workspaceId, teamId, memberId),
+    ).toEqual({ id: teamId });
+    expect(workspaceService.findOne).toHaveBeenCalledWith(orgId, workspaceId);
+    expect(membersService.findOne).toHaveBeenCalledWith(orgId, memberId);
+    expect(mocks.team.findFirst).toHaveBeenNthCalledWith(1, {
+      where: { id: teamId, workspaceId },
     });
-
-    it('throws if member already in team', async () => {
-      lookupService.assertWorkspaceInOrganization.mockResolvedValue(undefined);
-      teamsService.findOne.mockResolvedValue({ id: teamId });
-      membersService.findOne.mockResolvedValue({ id: memberId });
-      mocks.teamQuery.first.mockResolvedValue({ members: [{ id: memberId }] });
-
-      await expect(service.add(orgId, workspaceId, teamId, memberId))
-        .rejects.toThrow(ConflictException);
-    });
-
-    it('throws if team not found', async () => {
-      lookupService.assertWorkspaceInOrganization.mockResolvedValue(undefined);
-      teamsService.findOne.mockRejectedValue(new NotFoundException());
-
-      await expect(service.add(orgId, workspaceId, teamId, memberId))
-        .rejects.toThrow(NotFoundException);
-    });
-
-    it('throws if member not found', async () => {
-      lookupService.assertWorkspaceInOrganization.mockResolvedValue(undefined);
-      teamsService.findOne.mockResolvedValue({ id: teamId });
-      membersService.findOne.mockRejectedValue(new NotFoundException());
-
-      await expect(service.add(orgId, workspaceId, teamId, memberId))
-        .rejects.toThrow(NotFoundException);
+    expect(mocks.team.update).toHaveBeenCalledWith({
+      where: { id: teamId, workspaceId },
+      data: { members: { connect: { id: memberId, organizationId: orgId } } },
     });
   });
 
-  describe('remove', () => {
-    it('removes a member from a team', async () => {
-      lookupService.assertWorkspaceInOrganization.mockResolvedValue(undefined);
-      teamsService.findOne.mockResolvedValue({ id: teamId });
-      membersService.findOne.mockResolvedValue({ id: memberId });
-      mocks.teamQuery.first.mockResolvedValue({ members: [{ id: memberId }] });
-      mocks.teamQuery.update.mockResolvedValue({});
+  it('rejects duplicate membership', async () => {
+    await expect(
+      service.addMember(orgId, workspaceId, teamId, memberId),
+    ).rejects.toThrow(ConflictException);
+    expect(mocks.team.update).not.toHaveBeenCalled();
+  });
 
-      await service.remove(orgId, workspaceId, teamId, memberId);
-      expect(mocks.teamQuery.update).toHaveBeenCalledWith({
-        members: { disconnect: { id: memberId } },
-      });
-    });
+  it('rejects a missing team or a team in another workspace', async () => {
+    mocks.team.findFirst.mockResolvedValue(null);
+    await expect(
+      service.addMember(orgId, workspaceId, teamId, memberId),
+    ).rejects.toThrow(NotFoundException);
+    expect(membersService.findOne).not.toHaveBeenCalled();
+    expect(mocks.team.update).not.toHaveBeenCalled();
+  });
 
-    it('throws if member not in team', async () => {
-      lookupService.assertWorkspaceInOrganization.mockResolvedValue(undefined);
-      teamsService.findOne.mockResolvedValue({ id: teamId });
-      membersService.findOne.mockResolvedValue({ id: memberId });
-      mocks.teamQuery.first.mockResolvedValue({ members: [] });
+  it('rejects a missing member or member in another organization', async () => {
+    membersService.findOne.mockRejectedValue(new NotFoundException());
+    await expect(
+      service.addMember(orgId, workspaceId, teamId, memberId),
+    ).rejects.toThrow(NotFoundException);
+    expect(mocks.team.update).not.toHaveBeenCalled();
+  });
 
-      await expect(service.remove(orgId, workspaceId, teamId, memberId))
-        .rejects.toThrow(NotFoundException);
+  it('rejects an unavailable workspace before accessing teams', async () => {
+    workspaceService.findOne.mockRejectedValue(new NotFoundException());
+    await expect(
+      service.addMember(orgId, workspaceId, teamId, memberId),
+    ).rejects.toThrow(NotFoundException);
+    expect(mocks.team.findFirst).not.toHaveBeenCalled();
+    expect(mocks.team.update).not.toHaveBeenCalled();
+  });
+
+  it('disconnects membership without deleting the member', async () => {
+    await service.removeMember(orgId, workspaceId, teamId, memberId);
+    expect(mocks.team.update).toHaveBeenCalledWith({
+      where: { id: teamId, workspaceId },
+      data: { members: { disconnect: { id: memberId } } },
     });
   });
 
-  describe('findAll', () => {
-    it('lists all members in a team', async () => {
-      lookupService.assertWorkspaceInOrganization.mockResolvedValue(undefined);
-      teamsService.findOne.mockResolvedValue({ id: teamId });
-      const members = [
-        { id: '1', name: 'Member A' },
-        { id: '2', name: 'Member B' },
-      ];
-      mocks.teamQuery.first.mockResolvedValue({ members });
+  it('rejects removing a member who has not joined', async () => {
+    mocks.team.findFirst
+      .mockResolvedValueOnce({ id: teamId })
+      .mockResolvedValueOnce(null);
+    await expect(
+      service.removeMember(orgId, workspaceId, teamId, memberId),
+    ).rejects.toThrow(NotFoundException);
+    expect(mocks.team.update).not.toHaveBeenCalled();
+  });
 
-      const result = await service.findAll(orgId, workspaceId, teamId);
-      expect(result).toEqual(members);
+  it('lists members scoped to the team and organization', async () => {
+    mocks.member.findMany.mockResolvedValue([{ id: memberId }]);
+    expect(await service.findMembers(orgId, workspaceId, teamId)).toEqual([
+      { id: memberId },
+    ]);
+    expect(mocks.member.findMany).toHaveBeenCalledWith({
+      where: {
+        organizationId: orgId,
+        teams: { some: { id: teamId, workspaceId } },
+      },
     });
   });
 
-  describe('findMemberTeams', () => {
-    it('lists all teams for a member', async () => {
-      membersService.findOne.mockResolvedValue({ id: memberId });
-      const teams = [
-        { id: '1', name: 'Team A' },
-        { id: '2', name: 'Team B' },
-      ];
-      mocks.memberQuery.first.mockResolvedValue({ teams });
-
-      const result = await service.findMemberTeams(orgId, memberId);
-      expect(result).toEqual(teams);
-    });
-
-    it('throws if member not found', async () => {
-      membersService.findOne.mockRejectedValue(new NotFoundException());
-
-      await expect(service.findMemberTeams(orgId, memberId))
-        .rejects.toThrow(NotFoundException);
+  it('lists a member teams inside their organization', async () => {
+    mocks.team.findMany.mockResolvedValue([{ id: teamId }]);
+    expect(await service.findMemberTeams(orgId, memberId)).toEqual([
+      { id: teamId },
+    ]);
+    expect(mocks.team.findMany).toHaveBeenCalledWith({
+      where: {
+        workspace: { organizationId: orgId },
+        members: { some: { id: memberId } },
+      },
     });
   });
 });

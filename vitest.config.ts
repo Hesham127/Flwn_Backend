@@ -10,6 +10,8 @@ export default defineConfig({
     root: './',
     include: [
       'test/unit/**/*.spec.ts',
+      'test/teams/**/*.spec.ts',
+      'test/members/**/*.spec.ts',
       'test/integration/**/*.spec.ts',
       'src/**/*.spec.ts',
     ],
