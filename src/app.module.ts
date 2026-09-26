@@ -6,14 +6,17 @@ import { WorkspaceModule } from './workspace/workspace.module.js';
 import { WorkModule } from './work/work.module.js';
 import { IntegrationsModule } from './integrations/integrations.module.js';
 import { MeetingsModule } from './meetings/meetings.module.js';
+import { MembersModule } from './members/members.module.js';
+import { TeamsModule } from './teams/teams.module.js';
 
 @Module({
   imports: [
     OrganizationModule,
-    WorkspaceModule,
     WorkModule,
     IntegrationsModule,
     MeetingsModule,
+    MembersModule,
+    TeamsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
